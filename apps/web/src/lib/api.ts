@@ -153,7 +153,209 @@ if (isVercel) {
         };
       }
 
-      // 4. GET /leads
+      // 4. GET /auth/team
+      if (url.includes('/auth/team') && method === 'get') {
+        return {
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          config: cfg,
+          data: {
+            status: 'success',
+            data: [
+              { id: 'admin-id', name: 'AR.PARTHIBAN MOORTHY', email: 'arparthibanmoorthy@gmail.com', role: 'PRINCIPAL', initials: 'PM' },
+              { id: 'sales-priya', name: 'Priya', email: 'priya@gmail.com', role: 'SALES', initials: 'P' },
+              { id: 'sales-rahul', name: 'Rahul', email: 'rahul@gmail.com', role: 'SALES', initials: 'R' }
+            ]
+          }
+        };
+      }
+
+      // 5. GET /analytics/overview
+      if (url.includes('/analytics/overview') && method === 'get') {
+        const total = leads.length;
+        const won = leads.filter((l) => l.stage === 'WON').length;
+        const lost = leads.filter((l) => l.stage === 'LOST').length;
+        const active = leads.filter((l) => !['WON', 'LOST'].includes(l.stage)).length;
+        const pipelineValue = leads.filter((l) => !['WON', 'LOST'].includes(l.stage)).reduce((acc, l) => acc + l.budgetLakhs, 0);
+        const weightedForecast = leads
+          .filter((l) => !['WON', 'LOST'].includes(l.stage))
+          .reduce((acc, l) => acc + l.budgetLakhs * (l.winProbability / 100), 0);
+
+        const STAGES = ['NEW', 'CONTACTED', 'MEETING', 'PROPOSAL', 'NEGOTIATION', 'WON', 'LOST'];
+        const funnelData = STAGES.map((stage) => {
+          const matched = leads.filter(l => l.stage === stage);
+          const count = matched.length;
+          const valueLakhs = matched.reduce((a, b) => a + b.budgetLakhs, 0);
+          return { stage, count, valueLakhs };
+        });
+
+        // Group by source
+        const sourceMap: Record<string, number> = {};
+        leads.forEach(l => {
+          sourceMap[l.source] = (sourceMap[l.source] || 0) + 1;
+        });
+        const bySource = Object.keys(sourceMap).map(source => ({ source, count: sourceMap[source] })).sort((a,b) => b.count - a.count);
+
+        return {
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          config: cfg,
+          data: {
+            success: true,
+            data: {
+              totalLeads: total,
+              activeLeads: active,
+              wonLeads: won,
+              lostLeads: lost,
+              conversionRate: total > 0 ? Math.round((won / total) * 100) : 0,
+              pipelineValueLakhs: pipelineValue,
+              weightedForecastLakhs: weightedForecast,
+              winLoss: { won, lost, stalled: total - won - lost },
+              funnel: funnelData,
+              bySource,
+              todaysMeetings: 1
+            }
+          }
+        };
+      }
+
+      // 6. GET /analytics/source-breakdown
+      if (url.includes('/analytics/source-breakdown') && method === 'get') {
+        const sourceMap: Record<string, number> = {};
+        leads.forEach(l => {
+          sourceMap[l.source] = (sourceMap[l.source] || 0) + 1;
+        });
+        const data = Object.keys(sourceMap).map(source => ({ source, count: sourceMap[source] }));
+        return {
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          config: cfg,
+          data: { success: true, data }
+        };
+      }
+
+      // 7. GET /analytics/team-leaderboard
+      if (url.includes('/analytics/team-leaderboard') && method === 'get') {
+        const total = leads.length;
+        const won = leads.filter((l) => l.stage === 'WON').length;
+        const active = leads.filter((l) => !['WON', 'LOST'].includes(l.stage)).length;
+        const pipeline = leads.filter((l) => !['WON', 'LOST'].includes(l.stage)).reduce((a, l) => a + l.budgetLakhs, 0);
+        const weighted = leads.filter((l) => !['WON', 'LOST'].includes(l.stage)).reduce((a, l) => a + l.budgetLakhs * (l.winProbability / 100), 0);
+
+        const leader = {
+          id: 'admin-id',
+          name: 'AR.PARTHIBAN MOORTHY',
+          initials: 'PM',
+          role: 'PRINCIPAL',
+          totalLeads: total,
+          activeLeads: active,
+          wonLeads: won,
+          pipelineLakhs: pipeline,
+          weightedLakhs: weighted,
+          conversionRate: total > 0 ? Math.round((won / total) * 100) : 0
+        };
+
+        return {
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          config: cfg,
+          data: { success: true, data: [leader] }
+        };
+      }
+
+      // 8. GET /analytics/monthly-trends
+      if (url.includes('/analytics/monthly-trends') && method === 'get') {
+        const months = [
+          { month: 'Mar 26', newLeads: 12, wonLeads: 2, wonValueLakhs: 70 },
+          { month: 'Apr 26', newLeads: 18, wonLeads: 3, wonValueLakhs: 110 },
+          { month: 'May 26', newLeads: 22, wonLeads: 5, wonValueLakhs: 210 },
+          { month: 'Jun 26', newLeads: 29, wonLeads: 6, wonValueLakhs: 260 },
+          { month: 'Jul 26', newLeads: 16, wonLeads: 4, wonValueLakhs: 180 },
+          { month: 'Aug 26', newLeads: leads.length, wonLeads: leads.filter(l => l.stage === 'WON').length, wonValueLakhs: leads.filter(l => l.stage === 'WON').reduce((a,b) => a + b.budgetLakhs, 0) }
+        ];
+        return {
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          config: cfg,
+          data: { success: true, data: months }
+        };
+      }
+
+      // 9. GET /meetings
+      if (url.includes('/meetings') && method === 'get') {
+        return {
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          config: cfg,
+          data: {
+            success: true,
+            data: [
+              {
+                id: 'meet-1',
+                leadId: 'CRM-005',
+                lead: { name: 'Magizh', projectType: '3 BHK Premium Interior' },
+                scheduledAt: new Date(Date.now() + 2 * 24 * 3600 * 1000).toISOString(),
+                title: 'Design Consultation Meeting',
+                description: 'Discuss premium floor plan and kitchen layout.',
+                completed: false
+              }
+            ]
+          }
+        };
+      }
+
+      // 10. GET /notifications
+      if (url.includes('/notifications') && !url.includes('/read') && method === 'get') {
+        const notifications = JSON.parse(localStorage.getItem('bb_notifications') || '[]');
+        if (notifications.length === 0) {
+          const initNotifications = [
+            {
+              id: 'notif-1',
+              title: 'Hot Lead Assigned',
+              message: 'Lead Govindasamyraja (CRM-002) is waiting for follow-up.',
+              read: false,
+              createdAt: new Date().toISOString()
+            }
+          ];
+          localStorage.setItem('bb_notifications', JSON.stringify(initNotifications));
+          return {
+            status: 200,
+            statusText: 'OK',
+            headers: {},
+            config: cfg,
+            data: { success: true, data: initNotifications }
+          };
+        }
+        return {
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          config: cfg,
+          data: { success: true, data: notifications }
+        };
+      }
+
+      // 11. PATCH /notifications/read-all or /notifications/:id/read
+      if (url.includes('/notifications') && url.includes('/read')) {
+        const notifications = JSON.parse(localStorage.getItem('bb_notifications') || '[]');
+        const updated = notifications.map((n: any) => ({ ...n, read: true }));
+        localStorage.setItem('bb_notifications', JSON.stringify(updated));
+        return {
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          config: cfg,
+          data: { success: true }
+        };
+      }
+
+      // 12. GET /leads
       if (url.includes('/leads') && !url.includes('/leads/') && method === 'get') {
         let filtered = [...leads];
         const urlObj = new URL(url, 'http://dummy.com');
@@ -175,7 +377,7 @@ if (isVercel) {
         };
       }
 
-      // 5. GET /leads/:id
+      // 13. GET /leads/:id
       const leadIdMatch = url.match(/\/leads\/(CRM-\d+)/);
       if (leadIdMatch && !url.includes('/activities') && method === 'get') {
         const id = leadIdMatch[1];
@@ -195,7 +397,7 @@ if (isVercel) {
         return Promise.reject({ response: { status: 404, data: { message: 'Lead not found' } } });
       }
 
-      // 6. PATCH /leads/:id
+      // 14. PATCH /leads/:id
       if (leadIdMatch && method === 'patch') {
         const id = leadIdMatch[1];
         const idx = leads.findIndex(l => l.id === id);
@@ -233,7 +435,7 @@ if (isVercel) {
         return Promise.reject({ response: { status: 404, data: { message: 'Lead not found' } } });
       }
 
-      // 7. POST /leads/:id/activities
+      // 15. POST /leads/:id/activities
       if (leadIdMatch && url.includes('/activities') && method === 'post') {
         const id = leadIdMatch[1];
         const idx = leads.findIndex(l => l.id === id);
@@ -267,7 +469,7 @@ if (isVercel) {
         return Promise.reject({ response: { status: 404, data: { message: 'Lead not found' } } });
       }
 
-      // 8. POST /leads
+      // 16. POST /leads
       if (url.includes('/leads') && method === 'post') {
         const nextNum = leads.length + 1;
         const newId = `CRM-${String(nextNum).padStart(3, '0')}`;
