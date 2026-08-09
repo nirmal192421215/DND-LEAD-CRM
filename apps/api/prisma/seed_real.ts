@@ -1,0 +1,208 @@
+import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
+
+const prisma = new PrismaClient();
+
+const REAL_LEADS = [
+  { id: 'CRM-001', name: 'Vinoth Viswa', location: 'Chennai', phone: '+91 8668112878', email: 'vinothsetmore@gmail.com', valid: 'In Service Area', area: 'Above 4000 Sq.ft', budgetLakhs: 20, stage: 'NEW', priority: 'HOT' },
+  { id: 'CRM-002', name: 'Govindasamyraja', location: 'Pattukottai', phone: '+91 9445675879', email: 'ngsraja@gmail.com', valid: 'Out of Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 20, stage: 'NEW', priority: 'COLD' },
+  { id: 'CRM-003', name: 'Raj', location: 'Pondicherry', phone: '+91 9786884801', email: 'durairaj.web@gmail.com', valid: 'Out of Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'CONTACTED', priority: 'WARM' },
+  { id: 'CRM-004', name: 'Pawan Pandit', location: 'Patna', phone: '+91 6299923492', email: 'pawankumar0388bro@gmail.com', valid: 'Out of Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 20, stage: 'NEW', priority: 'COLD' },
+  { id: 'CRM-005', name: 'Magizh', location: 'Chennai', phone: '+91 9698617491', email: 'meeraprasad30@gmail.com', valid: 'In Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'MEETING', priority: 'HOT' },
+  { id: 'CRM-006', name: 'Cath', location: 'Trichy', phone: '+91 6374843775', email: 'rinairudayaraj@gmail.com', valid: 'Out of Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 20, stage: 'NEW', priority: 'COLD' },
+  { id: 'CRM-007', name: 'Aahkash Rana', location: 'Jamshedpur', phone: '+91 8252010140', email: '8252010140@gmail.com', valid: 'Out of Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 25, stage: 'CONTACTED', priority: 'COLD' },
+  { id: 'CRM-008', name: 'Akul Biswas', location: 'Banur', phone: '+91 9735718587', email: 'akulbiswas02@gmail.com', valid: 'Out of Service Area', area: 'Below 1000 Sq.ft', budgetLakhs: 20, stage: 'NEW', priority: 'COLD' },
+  { id: 'CRM-009', name: 'Sangppa Umesh', location: 'Bangalore', phone: '+91 6366075382', email: 'nijalingaashaap@gmail.com', valid: 'Out of Service Area', area: '2000-3000 Sq.ft', budgetLakhs: 75, stage: 'PROPOSAL', priority: 'HOT' },
+  { id: 'CRM-010', name: 'Nishant Yadav', location: 'Jaunpur', phone: '+91 9793281605', email: 'nishanty0082@gmail.com', valid: 'Out of Service Area', area: 'Below 1000 Sq.ft', budgetLakhs: 20, stage: 'NEW', priority: 'COLD' },
+  { id: 'CRM-011', name: 'Sakthi Ganesh', location: 'Polur', phone: '+91 8807812612', email: 'sakthi886@gmail.com', valid: 'Out of Service Area', area: 'Below 1000 Sq.ft', budgetLakhs: 35, stage: 'CONTACTED', priority: 'WARM' },
+  { id: 'CRM-012', name: 'Monu Kumar', location: 'Samastipur', phone: '+91 6201940694', email: 'prernasmp23@gmail.com', valid: 'Out of Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 20, stage: 'NEW', priority: 'COLD' },
+  { id: 'CRM-013', name: 'Pravin Bhuiya', location: 'Kapsi', phone: '+91 7587307727', email: 'provinking@gmail.com', valid: 'Out of Service Area', area: 'Below 1000 Sq.ft', budgetLakhs: 20, stage: 'NEW', priority: 'COLD' },
+  { id: 'CRM-014', name: 'Kalai Arasi', location: 'Chennai', phone: '+91 8778518845', email: 'kalaimohan1620@gmail.com', valid: 'In Service Area', area: 'Below 1000 Sq.ft', budgetLakhs: 20, stage: 'MEETING', priority: 'HOT' },
+  { id: 'CRM-015', name: 'Govindhasamy', location: 'Vellore', phone: '+91 9488852333', email: 'educationbschool2009@gmail.com', valid: 'Out of Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'CONTACTED', priority: 'WARM' },
+  { id: 'CRM-016', name: 'Hassine Coirs', location: 'Chennai', phone: '+91 8428756643', email: 'janasoftech@gmail.com', valid: 'In Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'PROPOSAL', priority: 'HOT' },
+  { id: 'CRM-017', name: 'Ranjani', location: 'Chennai', phone: '+91 8148723799', email: 'ranjanibjp19@gmail.com', valid: 'In Service Area', area: '2000-3000 Sq.ft', budgetLakhs: 35, stage: 'NEGOTIATION', priority: 'HOT' },
+  { id: 'CRM-018', name: 'Anbudan Jo', location: 'Thirumazhisai', phone: '+91 8098615186', email: 'jacabjoyal007@gmail.com', valid: 'In Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'MEETING', priority: 'WARM' },
+  { id: 'CRM-019', name: 'Prakash', location: 'Tambaram Selaiyur', phone: '+91 8056106416', email: 'prakashsankar8101@gmail.com', valid: 'In Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 20, stage: 'CONTACTED', priority: 'WARM' },
+  { id: 'CRM-020', name: 'Sarwan Saravanan', location: 'Thiruporur', phone: '+91 8220110318', email: 'g.sarwan1989@gmail.com', valid: 'In Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'WON', priority: 'HOT' },
+  { id: 'CRM-021', name: 'Destiny Believer', location: 'Pulivendula', phone: '+91 9985457899', email: 'mvnlokanath@gmail.com', valid: 'Out of Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'NEW', priority: 'COLD' },
+  { id: 'CRM-022', name: 'Jegan Jeganc', location: 'Ooty', phone: '+91 9047975766', email: 'thanushbobby12@gmail.com', valid: 'Out of Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'CONTACTED', priority: 'WARM' },
+  { id: 'CRM-023', name: 'Gowtham', location: 'Madurai', phone: '+91 9790720003', email: 'gowtham.bose@gmail.com', valid: 'Out of Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 75, stage: 'MEETING', priority: 'WARM' },
+  { id: 'CRM-024', name: 'Gowtham N', location: 'Namakkal', phone: '+91 9344610489', email: 'kinggowtham1999@gmail.com', valid: 'Out of Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'NEW', priority: 'COLD' },
+  { id: 'CRM-025', name: 'Samuel John', location: 'Nazareth', phone: '+91 8498058889', email: 'bell.brand@yahoo.com', valid: 'Out of Service Area', area: 'Above 4000 Sq.ft', budgetLakhs: 150, stage: 'PROPOSAL', priority: 'HOT' },
+  { id: 'CRM-026', name: 'Balamani', location: 'Chennai', phone: '+91 7092097263', email: 'mtbs11081973@gmail.com', valid: 'In Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'MEETING', priority: 'HOT' },
+  { id: 'CRM-027', name: 'Bharade Meghraj', location: 'Latur', phone: '+91 9145429520', email: 'meghrajbharade@gmail.com', valid: 'Out of Service Area', area: 'Below 1000 Sq.ft', budgetLakhs: 20, stage: 'NEW', priority: 'COLD' },
+  { id: 'CRM-028', name: 'Jayaprakash Mv', location: 'Chennai', phone: '+91 9585845955', email: 'jayaprakash729@gmail.com', valid: 'In Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'CONTACTED', priority: 'WARM' },
+  { id: 'CRM-029', name: 'Tamil Selvan', location: 'Chennai', phone: '+91 9787909053', email: 'tamilselvanmech1994@gmail.com', valid: 'In Service Area', area: 'Below 1000 Sq.ft', budgetLakhs: 20, stage: 'NEW', priority: 'WARM' },
+  { id: 'CRM-030', name: 'Balaji Ism', location: 'Chirala', phone: '+91 8317672333', email: 'baluprematho@gmail.com', valid: 'Out of Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'CONTACTED', priority: 'COLD' },
+  { id: 'CRM-031', name: 'Mrs.Nivetha Sureshku', location: 'Chennai', phone: '+91 7397488894', email: 'sureshnivetha1223@gmail.com', valid: 'In Service Area', area: 'Below 1000 Sq.ft', budgetLakhs: 35, stage: 'PROPOSAL', priority: 'HOT' },
+  { id: 'CRM-032', name: 'Ganapathy Subramania', location: 'Tuticorin', phone: '+91 8754900036', email: 'ganapathy8754@gmail.com', valid: 'Out of Service Area', area: 'Below 1000 Sq.ft', budgetLakhs: 20, stage: 'NEW', priority: 'COLD' },
+  { id: 'CRM-033', name: 'Vijay Vinoraj', location: 'Chennai', phone: '+91 9884151478', email: 'ysmvino@gmail.com', valid: 'In Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 20, stage: 'MEETING', priority: 'WARM' },
+  { id: 'CRM-034', name: 'Krishna Gond', location: 'Chennai', phone: '+91 8303875883', email: 'kk6610620@gmail.com', valid: 'Out of Service Area', area: 'Below 1000 Sq.ft', budgetLakhs: 20, stage: 'NEW', priority: 'COLD' },
+  { id: 'CRM-035', name: 'Harishhh', location: 'Chennai', phone: '+91 7200730263', email: 'rp.harishramachandra@gmail.com', valid: 'In Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'NEGOTIATION', priority: 'HOT' },
+  { id: 'CRM-036', name: 'Shindegorakh', location: 'Nashik', phone: '+91 7774072341', email: 'gorakhshinde2002@gmail.com', valid: 'Out of Service Area', area: '2000-3000 Sq.ft', budgetLakhs: 150, stage: 'PROPOSAL', priority: 'WARM' },
+  { id: 'CRM-037', name: 'Sivakumar S', location: 'Chennai', phone: '+91 8148497710', email: 'siva.carthick@gmail.com', valid: 'In Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'CONTACTED', priority: 'WARM' },
+  { id: 'CRM-038', name: 'Mohamed Nizarudeen', location: 'Tiruchirappalli', phone: '+91 6381844977', email: 'mohamednizarudeen72@gmail.com', valid: 'Out of Service Area', area: 'Below 1000 Sq.ft', budgetLakhs: 20, stage: 'NEW', priority: 'COLD' },
+  { id: 'CRM-039', name: 'Charles Prabhu', location: 'Chitalapakkam', phone: '+91 9841371401', email: 'charles20k2001@yahoo.com', valid: 'In Service Area', area: '2000-3000 Sq.ft', budgetLakhs: 75, stage: 'PROPOSAL', priority: 'HOT' },
+  { id: 'CRM-040', name: 'Rithika Ramesh', location: 'Chikarayapuram', phone: '+91 8056080756', email: 'ramesh891969@gmail.com', valid: 'In Service Area', area: 'Above 4000 Sq.ft', budgetLakhs: 150, stage: 'WON', priority: 'HOT' },
+  { id: 'CRM-041', name: 'Mani M_A_S', location: 'Thiruvallur', phone: '+91 8838738027', email: 'mani9590@gmail.com', valid: 'In Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 20, stage: 'CONTACTED', priority: 'WARM' },
+  { id: 'CRM-042', name: 'Abhishek Zalte', location: 'Aurangabad', phone: '+91 7820978120', email: 'abhishezalte0@gmail.com', valid: 'Out of Service Area', area: 'Below 1000 Sq.ft', budgetLakhs: 20, stage: 'NEW', priority: 'COLD' },
+  { id: 'CRM-043', name: 'Ajith', location: 'Coimbatore', phone: '+91 9025877466', email: 'digiloansstar@gmail.com', valid: 'Out of Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'CONTACTED', priority: 'WARM' },
+  { id: 'CRM-044', name: 'Subhadeep Sharma', location: 'Bhubaneswar', phone: '+91 9861819054', email: 'subhrapadhy.dav@gmail.com', valid: 'Out of Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'NEW', priority: 'COLD' },
+  { id: 'CRM-045', name: 'Padmaraj', location: 'Coimbatore', phone: '+91 8668112587', email: 'coachpadhu@gmail.com', valid: 'Out of Service Area', area: '2000-3000 Sq.ft', budgetLakhs: 35, stage: 'MEETING', priority: 'WARM' },
+  { id: 'CRM-046', name: 'V Nandakumar', location: 'Chennai', phone: '+91 7401548825', email: 'nandakumar.v35@gmail.com', valid: 'In Service Area', area: 'Below 1000 Sq.ft', budgetLakhs: 20, stage: 'CONTACTED', priority: 'WARM' },
+  { id: 'CRM-047', name: 'Arul', location: 'Kanchipuram', phone: '+91 9884467217', email: 'arulmaillaiudaya@gmail.com', valid: 'In Service Area', area: '2000-3000 Sq.ft', budgetLakhs: 35, stage: 'NEGOTIATION', priority: 'HOT' },
+  { id: 'CRM-048', name: 'Ponn', location: 'Salem', phone: '+91 9840000048', email: 'kpshan02@gmail.com', valid: 'In Service Area', area: 'Below 1000 Sq.ft', budgetLakhs: 20, stage: 'NEW', priority: 'COLD' },
+  { id: 'CRM-049', name: 'Ameershehan', location: 'Chennai', phone: '+91 7397483201', email: 'ameershehan9798@gmail.com', valid: 'In Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 20, stage: 'CONTACTED', priority: 'WARM' },
+  { id: 'CRM-050', name: 'Aruna Kamalraj', location: 'Ranipet', phone: '+91 9786055673', email: 'arunakamalcse@gmail.com', valid: 'Out of Service Area', area: 'Below 1000 Sq.ft', budgetLakhs: 20, stage: 'NEW', priority: 'COLD' },
+  { id: 'CRM-051', name: 'Kartik Pangariya', location: 'Pithoragarh', phone: '+91 9411769328', email: 'pangariyakartik@gmail.com', valid: 'Out of Service Area', area: 'Below 1000 Sq.ft', budgetLakhs: 20, stage: 'NEW', priority: 'COLD' },
+  { id: 'CRM-052', name: 'Magharadeepan', location: 'Coimbatore', phone: '+91 9790039317', email: 'magharadeepang@gmail.com', valid: 'Out of Service Area', area: '2000-3000 Sq.ft', budgetLakhs: 75, stage: 'PROPOSAL', priority: 'HOT' },
+  { id: 'CRM-053', name: 'Agilan Jayamoorthy', location: 'Pondicherry', phone: '+91 9500663285', email: 'jagilan506@gmail.com', valid: 'Out of Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'MEETING', priority: 'WARM' },
+  { id: 'CRM-054', name: 'Shanavas Vas', location: 'Salem', phone: '+91 9042034924', email: 'shanavas4926@gmail.com', valid: 'Out of Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'NEW', priority: 'COLD' },
+  { id: 'CRM-055', name: 'Vigneshkannan V', location: 'Thanjavur', phone: '+91 6369753557', email: 'vkannan400@gmail.com', valid: 'Out of Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'CONTACTED', priority: 'WARM' },
+  { id: 'CRM-056', name: 'Vikky Raj', location: 'Tiruchirapalli', phone: '+91 9911144290', email: 'bhagyashreevikas8@gmail.com', valid: 'Out of Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 20, stage: 'NEW', priority: 'COLD' },
+  { id: 'CRM-057', name: 'Ravichandran', location: 'Thanjavur', phone: '+91 9443000057', email: 'mgravichandran2004@gmail.com', valid: 'Out of Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'CONTACTED', priority: 'WARM' },
+  { id: 'CRM-058', name: 'Khadar Maideen', location: 'Chennai', phone: '+91 9840000058', email: 'khadar.maideen@gmail.com', valid: 'Out of Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 25, stage: 'NEW', priority: 'COLD' },
+  { id: 'CRM-059', name: 'Rajalachman', location: 'Nagercoil', phone: '+91 9600069499', email: 'lachmanraja@gmail.com', valid: 'Out of Service Area', area: '2000-3000 Sq.ft', budgetLakhs: 75, stage: 'PROPOSAL', priority: 'HOT' },
+  { id: 'CRM-060', name: 'Suriya', location: 'Thiruvarur', phone: '+91 7708258925', email: 'suriyalifts01@gmail.com', valid: 'Out of Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'CONTACTED', priority: 'WARM' },
+  { id: 'CRM-061', name: 'P. Kamaldhass', location: 'Chennai', phone: '+91 9600054733', email: 'p.prithviraj39@gmail.com', valid: 'In Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'MEETING', priority: 'HOT' },
+  { id: 'CRM-062', name: 'Parthiban', location: 'Thoraipakkam', phone: '+91 9894148051', email: 'parthiban_kali@yahoo.com', valid: 'In Service Area', area: '2000-3000 Sq.ft', budgetLakhs: 75, stage: 'NEGOTIATION', priority: 'HOT' },
+  { id: 'CRM-063', name: 'Mathivanan', location: 'Coimbatore', phone: '+91 9080753792', email: 'mathiicon@gmail.com', valid: 'Out of Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 20, stage: 'NEW', priority: 'COLD' },
+  { id: 'CRM-064', name: 'Sushanth', location: 'Chennai', phone: '+91 9360765251', email: 'sushanthsushanth38@gmail.com', valid: 'In Service Area', area: 'Below 1000 Sq.ft', budgetLakhs: 20, stage: 'CONTACTED', priority: 'WARM' },
+  { id: 'CRM-065', name: 'Saran', location: 'Thiruvallur', phone: '+91 9169586586', email: 'lakshmi.lachu1203@gmail.com', valid: 'In Service Area', area: 'Below 1000 Sq.ft', budgetLakhs: 20, stage: 'NEW', priority: 'WARM' },
+  { id: 'CRM-066', name: 'Nanda Kumar', location: 'Redhills', phone: '+91 9840000066', email: 'nanda.kumar@gmail.com', valid: 'In Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'CONTACTED', priority: 'WARM' },
+  { id: 'CRM-067', name: 'Suriya Rajesh', location: 'Chennai', phone: '+91 8489693068', email: 'nsuriyaece@gmail.com', valid: 'In Service Area', area: 'Below 1000 Sq.ft', budgetLakhs: 35, stage: 'MEETING', priority: 'HOT' },
+  { id: 'CRM-068', name: 'Srinivasan', location: 'Chennai', phone: '+91 9444951592', email: 'chithralayam117@gmail.com', valid: 'In Service Area', area: '2000-3000 Sq.ft', budgetLakhs: 35, stage: 'PROPOSAL', priority: 'HOT' },
+  { id: 'CRM-069', name: 'Gayathri Rose', location: 'Karaikal', phone: '+91 6385236312', email: 'vijaygvijay1993@gmail.com', valid: 'Out of Service Area', area: 'Below 1000 Sq.ft', budgetLakhs: 20, stage: 'NEW', priority: 'COLD' },
+  { id: 'CRM-070', name: 'Harris', location: 'Chennai', phone: '+91 9790687140', email: 'harrissulthans@gmail.com', valid: 'In Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'CONTACTED', priority: 'WARM' },
+  { id: 'CRM-071', name: 'Shiva Kumar', location: 'Chennai', phone: '+91 9840150837', email: 'sivakumar66702@gmail.com', valid: 'In Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'MEETING', priority: 'WARM' },
+  { id: 'CRM-072', name: 'Krithiga', location: 'Chennai', phone: '+91 9941568858', email: 'krithigagokul23@gmail.com', valid: 'In Service Area', area: 'Below 1000 Sq.ft', budgetLakhs: 35, stage: 'CONTACTED', priority: 'WARM' },
+  { id: 'CRM-073', name: 'Sharish R', location: 'Chennai', phone: '+91 7871301340', email: 'sharish.r3013@gmail.com', valid: 'In Service Area', area: 'Below 1000 Sq.ft', budgetLakhs: 20, stage: 'NEW', priority: 'WARM' },
+  { id: 'CRM-074', name: 'Shobana Chidambaram', location: 'Chennai', phone: '+91 9500015639', email: 'shobana.chidambaram@gmail.com', valid: 'In Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'PROPOSAL', priority: 'HOT' },
+  { id: 'CRM-075', name: 'Dhevash', location: 'Chennai', phone: '+91 7904445789', email: 'dhevashselvi@gmail.com', valid: 'In Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'CONTACTED', priority: 'WARM' },
+  { id: 'CRM-076', name: 'Sri arul', location: 'Cuddalore', phone: '+91 9994792320', email: 'aashikaraynesh@gmail.com', valid: 'Out of Service Area', area: 'Below 1000 Sq.ft', budgetLakhs: 20, stage: 'NEW', priority: 'COLD' },
+  { id: 'CRM-077', name: 'Srimathi.m', location: 'Tirupur', phone: '+91 8248922720', email: 'srimathimathi477@gmail.com', valid: 'Out of Service Area', area: 'Below 1000 Sq.ft', budgetLakhs: 20, stage: 'NEW', priority: 'COLD' },
+  { id: 'CRM-078', name: 'Kani Noor Mohamed', location: 'Pudukkottai', phone: '+91 7094527792', email: 'ganinoormd1809@gmail.com', valid: 'Out of Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'CONTACTED', priority: 'WARM' },
+  { id: 'CRM-079', name: 'Mohamed Thoufeeq', location: 'Coimbatore', phone: '+91 9677772633', email: 'hi.toffechu@gmail.com', valid: 'Out of Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'NEW', priority: 'COLD' },
+  { id: 'CRM-080', name: 'CR Vlogs', location: 'Chennai', phone: '+91 7305561643', email: 'rakshanakumar127@gmail.com', valid: 'In Service Area', area: '2000-3000 Sq.ft', budgetLakhs: 35, stage: 'MEETING', priority: 'HOT' },
+  { id: 'CRM-081', name: 'Surya', location: 'Chennai', phone: '+91 9941891093', email: 'surya5892@gmail.com', valid: 'In Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'CONTACTED', priority: 'WARM' },
+  { id: 'CRM-082', name: 'Balamani M', location: 'Chennai', phone: '+91 7092097263', email: 'mtbs11081973@gmail.com', valid: 'Out of Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'NEW', priority: 'COLD' },
+  { id: 'CRM-083', name: 'Rabik', location: 'New Perungalathur', phone: '+91 9790808772', email: 'rafimechrafi@gmail.com', valid: 'In Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'CONTACTED', priority: 'WARM' },
+  { id: 'CRM-084', name: 'Pravi', location: 'Padi', phone: '+91 8056078828', email: 'praveenasivakumar151@gmail.com', valid: 'In Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'MEETING', priority: 'WARM' },
+  { id: 'CRM-085', name: 'Veerasankar', location: 'Thiruvarur', phone: '+91 7010461145', email: 'prasath2308@gmail.com', valid: 'Out of Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'NEW', priority: 'COLD' },
+  { id: 'CRM-086', name: 'Vaishali Vijayan', location: 'Chennai', phone: '+91 8762054867', email: 'vaishalevijayan2211@gmail.com', valid: 'In Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'CONTACTED', priority: 'WARM' },
+  { id: 'CRM-087', name: 'Arunkumaran B', location: 'Chennai', phone: '+91 9445484322', email: 'arunkumaran.pro@gmail.com', valid: 'In Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'PROPOSAL', priority: 'HOT' },
+  { id: 'CRM-088', name: 'Gokulnath', location: 'ECR', phone: '+91 7397261650', email: 'ngokul697@gmail.com', valid: 'In Service Area', area: '2000-3000 Sq.ft', budgetLakhs: 75, stage: 'NEGOTIATION', priority: 'HOT' },
+  { id: 'CRM-089', name: 'Mani Maran', location: 'Chennai', phone: '+91 9952690738', email: 'manimarang94@gmail.com', valid: 'In Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'CONTACTED', priority: 'WARM' },
+  { id: 'CRM-090', name: 'Murugan PK', location: 'Thirumazhisai', phone: '+91 9940515029', email: 'sivasakthi2711@gmail.com', valid: 'In Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'MEETING', priority: 'WARM' },
+  { id: 'CRM-091', name: 'Samarendra K. Dash', location: 'Cuttack', phone: '+91 9439086669', email: 'talk2tuku@gmail.com', valid: 'Out of Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'NEW', priority: 'COLD' },
+  { id: 'CRM-092', name: 'Kalyan Raj Pandit', location: 'Cuttack', phone: '+91 8327767918', email: 'kalyanrajpandit@gmail.com', valid: 'Out of Service Area', area: 'Above 4000 Sq.ft', budgetLakhs: 150, stage: 'PROPOSAL', priority: 'WARM' },
+  { id: 'CRM-093', name: 'Ashok', location: 'Coimbatore', phone: '+91 9884245098', email: 'ashbashop@gmail.com', valid: 'Out of Service Area', area: 'Above 4000 Sq.ft', budgetLakhs: 150, stage: 'CONTACTED', priority: 'WARM' },
+  { id: 'CRM-094', name: 'Shaik Subhan Saheb', location: 'Kovvur', phone: '+91 8341187715', email: 'shaiksubhanshaeb@gmail.com', valid: 'Out of Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'NEW', priority: 'COLD' },
+  { id: 'CRM-095', name: 'Subir Pradhan', location: 'Rourkera', phone: '+91 9437046695', email: 'subirkpradhan@gmail.com', valid: 'Out of Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 75, stage: 'MEETING', priority: 'WARM' },
+  { id: 'CRM-096', name: 'Srinivasan S', location: 'Chennai', phone: '+91 7063592906', email: 'srinivasan1299@gmail.com', valid: 'In Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'CONTACTED', priority: 'WARM' },
+  { id: 'CRM-097', name: 'Aman Patel', location: 'Rewa', phone: '+91 7415424166', email: 'iamamanpatel1999@gmail.com', valid: 'Out of Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'NEW', priority: 'COLD' },
+  { id: 'CRM-098', name: 'Satyajit Gupta', location: 'Badarpur', phone: '+91 9401242155', email: 'satyajitbdp@gmail.com', valid: 'Out of Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'NEW', priority: 'COLD' },
+  { id: 'CRM-099', name: 'Usingh Singh', location: 'Tatanagar', phone: '+91 8578014622', email: 'us776266@gmail.com', valid: 'Out of Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'NEW', priority: 'COLD' },
+  { id: 'CRM-100', name: 'Chandra Sekhar Ravur', location: 'Tanguturu', phone: '+91 9849811334', email: 'chanduravuri@hotmail.com', valid: 'Out of Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'CONTACTED', priority: 'COLD' },
+  { id: 'CRM-101', name: 'Mahesh Kolhe', location: 'Pune', phone: '+91 9922507999', email: 'ma_kolhe@yahoo.co.in', valid: 'Out of Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 150, stage: 'MEETING', priority: 'WARM' },
+  { id: 'CRM-102', name: 'Muhammed Fahim Shaik', location: 'Mumbai', phone: '+91 7738781332', email: 'shafah122@gmail.com', valid: 'Out of Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'NEW', priority: 'COLD' },
+  { id: 'CRM-103', name: 'Bhalla dev', location: 'Ranchi', phone: '+91 8434222205', email: 'golukhan786@gmail.com', valid: 'Out of Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 75, stage: 'CONTACTED', priority: 'WARM' },
+  { id: 'CRM-104', name: 'Md Rashid Choudhary', location: 'Jammu', phone: '+91 9622138824', email: 'mrchoudhary1960@gmail.com', valid: 'Out of Service Area', area: '2000-3000 Sq.ft', budgetLakhs: 75, stage: 'PROPOSAL', priority: 'WARM' },
+  { id: 'CRM-105', name: 'Neeraj', location: 'Alandur', phone: '+91 9677122066', email: 'neerajsrmeas@gmail.com', valid: 'In Service Area', area: '2000-3000 Sq.ft', budgetLakhs: 150, stage: 'WON', priority: 'HOT' },
+  { id: 'CRM-106', name: 'S.m. Abdul Hakkeem', location: 'Dindigul', phone: '+91 9367927761', email: 'smhakkeemdgl@gmail.com', valid: 'Out of Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'NEW', priority: 'COLD' },
+  { id: 'CRM-107', name: 'Rangaswamy R', location: 'Pondichéry', phone: '+91 9842319738', email: 'dev19738@gmail.com', valid: 'Out of Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 75, stage: 'CONTACTED', priority: 'WARM' },
+  { id: 'CRM-108', name: 'Ramya', location: 'Chennai', phone: '+91 9344679989', email: 'ramyadesign1820@gmail.com', valid: 'In Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'MEETING', priority: 'HOT' },
+  { id: 'CRM-109', name: 'Lingam Moorthy', location: 'Thiruvallur', phone: '+91 9841796927', email: 'vanithalingamoorthy@gmail.com', valid: 'In Service Area', area: '2000-3000 Sq.ft', budgetLakhs: 150, stage: 'PROPOSAL', priority: 'HOT' },
+  { id: 'CRM-110', name: 'P Senthil Murugan', location: 'Ambattur', phone: '+91 9080955959', email: 'sangavirmm@gmail.com', valid: 'In Service Area', area: 'Above 4000 Sq.ft', budgetLakhs: 150, stage: 'NEGOTIATION', priority: 'HOT' },
+  { id: 'CRM-111', name: 'Hemakumar Sri', location: 'Chennai', phone: '+91 9176968668', email: 'hemakumarsri@gmail.com', valid: 'In Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'CONTACTED', priority: 'WARM' },
+  { id: 'CRM-112', name: 'Priya elumalai', location: 'Chennai', phone: '+91 8610651372', email: 'mi11xbackup2025@gmail.com', valid: 'In Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 75, stage: 'PROPOSAL', priority: 'HOT' },
+  { id: 'CRM-113', name: 'Sivamurthy N', location: 'Neyveli', phone: '+91 6381062501', email: 'nsivamurthy1970@gmail.com', valid: 'Out of Service Area', area: '2000-3000 Sq.ft', budgetLakhs: 75, stage: 'NEW', priority: 'COLD' },
+  { id: 'CRM-114', name: 'Narendhira', location: 'Uthukkottai', phone: '+91 6379765586', email: 'narendhira50@gmail.com', valid: 'Out of Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'NEW', priority: 'COLD' },
+  { id: 'CRM-115', name: 'Shuraif Khan', location: 'Cumbum', phone: '+91 8870690155', email: 'shuraifkhan@gmail.com', valid: 'Out of Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'CONTACTED', priority: 'WARM' },
+  { id: 'CRM-116', name: 'Cibina Raman', location: 'Thoothukudi', phone: '+91 6381169759', email: 'cibinaraman@gmail.com', valid: 'Out of Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 35, stage: 'NEW', priority: 'COLD' },
+  { id: 'CRM-117', name: 'Taufeeq', location: 'Chennai', phone: '+91 6382116820', email: 'taufeequmar07022002@gmail.com', valid: 'In Service Area', area: '1000-2000 Sq.ft', budgetLakhs: 75, stage: 'MEETING', priority: 'HOT' },
+];
+
+async function seedRealLeads() {
+  console.log('🧹 Clearing old dummy leads & activities...');
+  await prisma.activity.deleteMany({});
+  await prisma.note.deleteMany({});
+  await prisma.meeting.deleteMany({});
+  await prisma.fileAsset.deleteMany({});
+  await prisma.proposal.deleteMany({});
+  await prisma.lead.deleteMany({});
+
+  console.log('👤 Fetching admin user (AR.PARTHIBAN MOORTHY)...');
+  let admin = await prisma.user.findUnique({ where: { email: 'arparthibanmoorthy@gmail.com' } });
+
+  if (!admin) {
+    const passwordHash = await bcrypt.hash('password123', 12);
+    admin = await prisma.user.create({
+      data: {
+        email: 'arparthibanmoorthy@gmail.com',
+        password: passwordHash,
+        name: 'AR.PARTHIBAN MOORTHY',
+        role: 'PRINCIPAL',
+        initials: 'PM',
+      },
+    });
+  }
+
+  console.log(`🚀 Seeding ${REAL_LEADS.length} real client leads...`);
+
+  for (const item of REAL_LEADS) {
+    const winProb =
+      item.stage === 'WON' ? 100 :
+      item.stage === 'NEGOTIATION' ? 85 :
+      item.stage === 'PROPOSAL' ? 70 :
+      item.stage === 'MEETING' ? 50 :
+      item.stage === 'CONTACTED' ? 30 : 15;
+
+    const projectType =
+      item.area.includes('4000') ? 'Luxury Villa Architecture' :
+      item.area.includes('2000') ? '3 BHK Premium Interior' :
+      item.area.includes('1000') ? '2 BHK Compact Interior' : 'Apartment Interior Design';
+
+    const source = item.valid === 'In Service Area' ? 'Referral' : 'Google';
+
+    const lead = await prisma.lead.create({
+      data: {
+        id: item.id,
+        name: item.name,
+        projectType: projectType,
+        projectDescription: `Built-up area: ${item.area}. Service region: ${item.valid}. Location: ${item.location}.`,
+        location: item.location,
+        budgetLakhs: item.budgetLakhs,
+        source: source,
+        priority: item.priority as any,
+        stage: item.stage as any,
+        phone: item.phone,
+        email: item.email,
+        winProbability: winProb,
+        tags: JSON.stringify([item.valid === 'In Service Area' ? 'In Service Area' : 'Out of Service', item.area, `ID: ${item.id}`]),
+        ownerId: admin.id,
+      },
+    });
+
+    // Create initial timeline activity with lead ID reference
+    await prisma.activity.create({
+      data: {
+        leadId: lead.id,
+        createdById: admin.id,
+        type: 'NOTE',
+        text: `Lead ${item.id} captured. Service zone: ${item.valid}. Contact: ${item.phone}.`,
+      },
+    });
+  }
+
+  console.log(`🎉 SUCCESS! All ${REAL_LEADS.length} real leads seeded into Bind Build CRM!`);
+}
+
+seedRealLeads()
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

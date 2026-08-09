@@ -1,21 +1,27 @@
 {
   "name": "bind-build-erp",
   "version": "1.0.0",
-  "description": "Full-stack CRM for Studio Bind Architects",
   "private": true,
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
   "scripts": {
-    "dev": "turbo run dev --parallel",
-    "build": "turbo run build",
-    "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev --name init",
-    "db:seed": "ts-node --compiler ts-node/register apps/api/prisma/seed.ts",
-    "db:studio": "prisma studio"
+    "dev": "concurrently \"npm run dev --workspace=apps/api\" \"npm run dev --workspace=apps/web\"",
+    "dev:api": "npm run dev --workspace=apps/api",
+    "dev:web": "npm run dev --workspace=apps/web",
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspace=apps/web",
+    "test:coverage": "npm run test:coverage --workspace=apps/web",
+    "lint": "npm run lint --workspace=apps/web",
+    "typecheck": "tsc --noEmit --project apps/web/tsconfig.app.json && tsc --noEmit --project apps/api/tsconfig.json",
+    "db:generate": "npm run db:generate --workspace=apps/api",
+    "db:migrate": "npm run db:migrate --workspace=apps/api",
+    "db:seed": "npm run db:seed --workspace=apps/api",
+    "db:studio": "npm run db:studio --workspace=apps/api"
   },
   "devDependencies": {
-    "turbo": "^2.0.0"
+    "concurrently": "^8.2.2",
+    "typescript": "^5.4.5"
   }
 }

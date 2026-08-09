@@ -1,0 +1,186 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// NOTE: SQLite doesn't support enums or array types.
+// Enum validation is handled at the application level via Zod schemas.
+// Array fields (tags) are stored as JSON strings.
+
+// ─── Models ──────────────────────────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("SALES") // PRINCIPAL | SALES | ADMIN
+  avatar    String?
+  initials  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  ownedLeads    Lead[]         @relation("LeadOwner")
+  activities    Activity[]
+  notes         Note[]
+  meetings      Meeting[]
+  fileAssets    FileAsset[]
+  proposals     Proposal[]
+  refreshTokens RefreshToken[]
+  notifications Notification[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("refresh_tokens")
+}
+
+model Lead {
+  id                 String   @id @default(cuid())
+  name               String
+  projectType        String
+  projectDescription String?
+  location           String
+  budgetLakhs        Float
+  source             String   // Instagram | Google | Referral | Website | Direct | WalkIn
+  priority           String   // HOT | WARM | COLD
+  stage              String   @default("NEW") // NEW | CONTACTED | MEETING | PROPOSAL | NEGOTIATION | WON | LOST
+  phone              String?
+  email              String?
+  ownerId            String
+  owner              User     @relation("LeadOwner", fields: [ownerId], references: [id])
+  winProbability     Float    @default(0)
+  tags               String   @default("[]") // JSON array stored as string
+  stageChangedAt     DateTime?
+  wonAt              DateTime?
+  lostReason         String?
+  lostNote           String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  // Relations
+  activities Activity[]
+  notes      Note[]
+  meetings   Meeting[]
+  fileAssets FileAsset[]
+  proposal   Proposal?
+
+  @@index([stage])
+  @@index([ownerId])
+  @@index([priority])
+  @@index([createdAt])
+  @@map("leads")
+}
+
+model Activity {
+  id          String   @id @default(cuid())
+  leadId      String
+  lead        Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  type        String   // CALL | WHATSAPP | EMAIL | NOTE | MEETING | STAGE_CHANGE | FILE
+  text        String?
+  quote       Float?
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@index([leadId])
+  @@map("activities")
+}
+
+model Note {
+  id          String   @id @default(cuid())
+  leadId      String
+  lead        Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  text        String
+  pinned      Boolean  @default(false)
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([leadId])
+  @@map("notes")
+}
+
+model Meeting {
+  id           String   @id @default(cuid())
+  leadId       String
+  lead         Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  title        String
+  type         String   // VideoCall | StudioMeeting | SiteVisit | PhoneCall
+  scheduledAt  DateTime
+  durationMins Int      @default(60)
+  completed    Boolean  @default(false)
+  createdById  String
+  createdBy    User     @relation(fields: [createdById], references: [id])
+  createdAt    DateTime @default(now())
+
+  @@index([leadId])
+  @@map("meetings")
+}
+
+model FileAsset {
+  id           String   @id @default(cuid())
+  leadId       String
+  lead         Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  fileName     String
+  kind         String   // pdf | dwg | img | xls
+  sizeBytes    Int
+  storagePath  String
+  uploadedById String
+  uploadedBy   User     @relation(fields: [uploadedById], references: [id])
+  createdAt    DateTime @default(now())
+
+  @@index([leadId])
+  @@map("file_assets")
+}
+
+model Proposal {
+  id           String   @id @default(cuid())
+  leadId       String   @unique
+  lead         Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  version      Int      @default(1)
+  amountLakhs  Float
+  sentAt       DateTime @default(now())
+  viewCount    Int      @default(0)
+  lastViewedAt DateTime?
+  status       String   @default("Sent") // Sent | Viewed | Accepted | Rejected
+  createdById  String
+  createdBy    User     @relation(fields: [createdById], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("proposals")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   // meeting_reminder | proposal_viewed | lead_won | stage_change | system
+  title     String
+  body      String
+  leadId    String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, read])
+  @@map("notifications")
+}
