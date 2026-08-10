@@ -1,20 +1,33 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useEffect, useState } from 'react';
 
 const NAV = [
-  { label: 'Dashboard',      path: '/',          icon: '⬡',  exact: true },
-  { label: 'Leads Pipeline', path: '/leads',     icon: '◈' },
-  { label: 'Analytics',      path: '/analytics', icon: '◎' },
-  { label: 'Team',           path: '/team',      icon: '◉' },
+  { label: 'Dashboard',  path: '/',          icon: '⬡', exact: true },
+  { label: 'Leads',      path: '/leads',     icon: '◈' },
+  { label: 'Analytics',  path: '/analytics', icon: '◎' },
+  { label: 'Team',       path: '/team',      icon: '◉' },
+  { label: 'Settings',   path: '/settings',  icon: '⚙' },
 ];
 
 const NAV_BOTTOM = [
   { label: 'Settings', path: '/settings', icon: '⚙' },
 ];
 
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+  return isMobile;
+}
+
 export default function Sidebar() {
   const { user, logout, isPrincipal } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   const handleLogout = async () => {
     await logout();
@@ -23,6 +36,55 @@ export default function Sidebar() {
 
   const roleLabel = isPrincipal ? 'Principal' : user?.role === 'ADMIN' ? 'Admin' : 'Sales';
 
+  // ─── Mobile: Bottom Navigation Bar ───────────────────────────────────────────
+  if (isMobile) {
+    return (
+      <nav style={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: 60,
+        background: 'rgba(17,19,24,0.97)',
+        borderTop: '1px solid rgba(255,255,255,0.08)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-around',
+        zIndex: 200,
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+      }}>
+        {NAV.map((item) => (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            end={item.exact}
+            style={({ isActive }) => ({
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 3,
+              flex: 1,
+              padding: '6px 0',
+              textDecoration: 'none',
+              color: isActive ? '#8b84ff' : 'rgba(255,255,255,0.4)',
+              fontSize: 9,
+              fontWeight: isActive ? 700 : 500,
+              letterSpacing: '0.04em',
+              transition: 'color 150ms',
+              borderTop: isActive ? '2px solid #6c63ff' : '2px solid transparent',
+            })}
+          >
+            <span style={{ fontSize: 22, lineHeight: 1 }}>{item.icon}</span>
+            {item.label}
+          </NavLink>
+        ))}
+      </nav>
+    );
+  }
+
+  // ─── Desktop: Regular Sidebar ────────────────────────────────────────────────
   return (
     <aside className="sidebar">
       {/* Logo */}
@@ -37,7 +99,7 @@ export default function Sidebar() {
       {/* Main Navigation */}
       <div className="sidebar-section-label">Menu</div>
       <nav className="sidebar-nav">
-        {NAV.map((item) => (
+        {NAV.filter(i => i.path !== '/settings').map((item) => (
           <NavLink
             key={item.path}
             to={item.path}

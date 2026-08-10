@@ -984,66 +984,13 @@ ul, ol { list-style: none; }
 
 /* ─── Mobile Responsive ──────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  /* Layout: bottom navigation on mobile */
+  /* Layout: sidebar is rendered as bottom nav by React on mobile */
   .sidebar {
-    display: flex !important;
-    flex-direction: row !important;
-    top: auto !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    width: 100% !important;
-    height: 65px !important;
-    padding: 0 !important;
-    border-right: none !important;
-    border-top: 1px solid var(--border) !important;
-    z-index: 100 !important;
-    background: rgba(17,19,24,0.95) !important;
-    backdrop-filter: blur(10px) !important;
-    justify-content: space-around !important;
-    align-items: center !important;
-  }
-  
-  /* Hide logo, footer, spacer */
-  .sidebar > :not(.sidebar-nav) {
-    display: none !important;
-  }
-
-  /* Un-nest nav items so they become direct children of the flex row */
-  .sidebar-nav {
-    display: contents !important;
-  }
-
-  /* Style nav items for bottom bar */
-  .nav-item {
-    flex-direction: column !important;
-    gap: 4px !important;
-    padding: 6px 0 !important;
-    justify-content: center !important;
-    border-radius: 0 !important;
-    flex: 1 !important;
-    text-align: center !important;
-    font-size: 10px !important;
-    font-weight: 500 !important;
-  }
-  
-  .nav-item.active {
-    background: transparent !important;
-    color: var(--brand-light) !important;
-  }
-  .nav-item.active::before {
-    display: none !important;
-  }
-  
-  .nav-item-icon {
-    font-size: 20px !important;
-    margin: 0 auto !important;
-    width: auto !important;
-    height: auto !important;
+    display: none !important; /* React renders <nav> outside .sidebar on mobile */
   }
 
   .page-content {
-    padding: 16px 10px 80px 10px !important; /* Space for bottom nav */
+    padding: 16px 10px 76px 10px !important; /* 76px for bottom nav height */
     margin-left: 0 !important;
   }
 
