@@ -851,13 +851,7 @@ ul, ol { list-style: none; }
   .grid-4 { grid-template-columns: repeat(2, 1fr); }
 }
 
-@media (max-width: 768px) {
-  .sidebar { transform: translateX(-100%); }
-  .page-content { margin-left: 0; }
-  .topbar { left: 0; }
-  .grid-2, .grid-3 { grid-template-columns: 1fr; }
-  .form-grid { grid-template-columns: 1fr; }
-}
+
 
 /* ─── Stage Color Fix: MEETING stage badge ───────────────────────────────────── */
 .stage-badge.stage-MEETING, .stage-badge.stage-meeting { background: rgba(245,166,35,0.15); color: var(--amber); border-color: rgba(245,166,35,0.3); }
