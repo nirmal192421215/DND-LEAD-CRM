@@ -355,6 +355,35 @@ if (isVercel) {
         };
       }
 
+      // GET /search
+      if (url.includes('/search') && method === 'get') {
+        const urlObj = new URL(url, 'http://dummy.com');
+        const q = (urlObj.searchParams.get('q') || '').toLowerCase();
+        
+        let filtered: Lead[] = [];
+        if (q && q.length >= 2) {
+          filtered = leads.filter(l => 
+            l.name.toLowerCase().includes(q) ||
+            l.location.toLowerCase().includes(q) ||
+            l.projectType.toLowerCase().includes(q) ||
+            (l.email && l.email.toLowerCase().includes(q)) ||
+            (l.phone && l.phone.includes(q)) ||
+            l.id.toLowerCase().includes(q)
+          );
+        }
+        
+        return {
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          config: cfg,
+          data: {
+            success: true,
+            data: { leads: filtered.slice(0, 10) }
+          }
+        };
+      }
+
       // 12. GET /leads
       if (url.includes('/leads') && !url.includes('/leads/') && method === 'get') {
         let filtered = [...leads];

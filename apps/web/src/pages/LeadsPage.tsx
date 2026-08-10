@@ -207,6 +207,7 @@ export default function LeadsPage() {
                       fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-display)',
                       color: 'var(--brand-light)', background: 'var(--brand-dim)',
                       padding: '3px 8px', borderRadius: 6, border: '1px solid rgba(108,99,255,0.2)',
+                      whiteSpace: 'nowrap', display: 'inline-block'
                     }}>
                       {lead.id}
                     </span>
