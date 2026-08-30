@@ -5,6 +5,7 @@ import { formatBudget, stageLabel } from '../../lib/utils';
 
 interface SearchResult {
   id: string;
+  serialNo?: number;
   name: string;
   stage: string;
   projectType: string;
@@ -29,7 +30,7 @@ export default function GlobalSearch() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const search = useCallback(async (q: string) => {
-    if (!q.trim() || q.trim().length < 2) { setResults([]); setLoading(false); return; }
+    if (!q.trim()) { setResults([]); setLoading(false); return; }
     setLoading(true);
     try {
       const { data } = await api.get(`/search?q=${encodeURIComponent(q)}&limit=10`);
@@ -154,7 +155,18 @@ export default function GlobalSearch() {
               </div>
 
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-primary)', marginBottom: 2 }}>{result.name}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                  <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-primary)' }}>{result.name}</span>
+                  {result.serialNo && (
+                    <span style={{
+                      fontSize: 10, fontWeight: 700, fontFamily: 'var(--font-display)',
+                      color: 'var(--brand-light)', background: 'var(--brand-dim)',
+                      padding: '1px 5px', borderRadius: 4, border: '1px solid rgba(108,99,255,0.25)',
+                    }}>
+                      DND-{result.serialNo.toString().padStart(3, '0')}
+                    </span>
+                  )}
+                </div>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {result.projectType} · 📍 {result.location}
                 </div>
