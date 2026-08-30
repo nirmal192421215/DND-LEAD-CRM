@@ -12,7 +12,7 @@ const LEAD_SELECT = {
   id: true, name: true, projectType: true, projectDescription: true, location: true,
   budgetLakhs: true, source: true, priority: true, stage: true, phone: true, email: true,
   winProbability: true, tags: true, stageChangedAt: true, wonAt: true, lostReason: true,
-  lostNote: true, createdAt: true, updatedAt: true, ownerId: true,
+  lostNote: true, callBackAt: true, callBackNote: true, meetingUrl: true, totalCallDurationSecs: true, createdAt: true, updatedAt: true, ownerId: true,
   owner: { select: { id: true, name: true, email: true, role: true, initials: true, avatar: true } },
   _count: { select: { activities: true, notes: true, meetings: true, fileAssets: true } },
 };
@@ -20,17 +20,22 @@ const LEAD_SELECT = {
 const CreateLeadSchema = z.object({
   name: z.string().min(2),
   projectType: z.string().min(2),
-  projectDescription: z.string().optional(),
+  projectDescription: z.string().optional().nullable(),
   location: z.string().min(2),
   budgetLakhs: z.number().positive(),
-  source: z.enum(['Instagram', 'Google', 'Referral', 'Website', 'Direct', 'WalkIn']),
+  source: z.enum(['Instagram', 'Google', 'Referral', 'Website', 'Direct', 'WalkIn']).default('Google'),
   priority: z.enum(['HOT', 'WARM', 'COLD']).default('WARM'),
-  stage: z.enum(['NEW', 'CONTACTED', 'MEETING', 'PROPOSAL', 'NEGOTIATION', 'WON', 'LOST']).default('NEW'),
-  phone: z.string().optional(),
-  email: z.string().email().optional(),
+  stage: z.enum(['NEW', 'CONTACTED', 'CALL_BACK', 'MEETING', 'PROPOSAL', 'NEGOTIATION', 'WON', 'LOST']).default('NEW'),
+  phone: z.string().optional().nullable(),
+  email: z.string().optional().nullable(),
   winProbability: z.number().min(0).max(100).default(0),
   tags: z.array(z.string()).default([]).transform((t) => JSON.stringify(t)),
   ownerId: z.string().optional(),
+  callBackAt: z.union([z.string(), z.date()]).optional().nullable().transform((v) => v ? new Date(v) : null),
+  callBackNote: z.string().optional().nullable(),
+  meetingUrl: z.string().optional().nullable(),
+  lostReason: z.string().optional().nullable(),
+  lostNote: z.string().optional().nullable(),
 });
 
 const UpdateLeadSchema = CreateLeadSchema.partial();
@@ -67,7 +72,7 @@ leadsRouter.get('/', async (req: AuthRequest, res: Response) => {
     prisma.lead.findMany({
       where,
       select: LEAD_SELECT,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { id: 'asc' },
       skip: (pageNum - 1) * limitNum,
       take: limitNum,
     }),
@@ -123,8 +128,14 @@ leadsRouter.post('/', async (req: AuthRequest, res: Response) => {
 // Helper for stage label in activity logs
 function stageLabel(s: string): string {
   const labels: Record<string, string> = {
-    NEW: 'New', CONTACTED: 'Contacted', MEETING: 'Meeting',
-    PROPOSAL: 'Proposal', NEGOTIATION: 'Negotiation', WON: 'Won 🎉', LOST: 'Lost ❌',
+    NEW: 'New Enquiry',
+    CONTACTED: 'Contacted',
+    CALL_BACK: 'Call Back ⏰',
+    MEETING: 'Google Meet 🎥',
+    PROPOSAL: 'Proposal Sent 📄',
+    NEGOTIATION: 'Negotiation',
+    WON: 'Won 🎉',
+    LOST: 'Lost ❌',
   };
   return labels[s] ?? s;
 }

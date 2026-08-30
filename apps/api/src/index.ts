@@ -15,13 +15,29 @@ import { analyticsRouter } from './routes/analytics';
 import { proposalsRouter } from './routes/proposals';
 import { notificationsRouter } from './routes/notifications';
 import { searchRouter } from './routes/search';
+import { aiRouter } from './routes/ai';
 import { errorHandler } from './middleware/errorHandler';
 
 const app = express();
 const PORT = process.env.PORT ?? 4000;
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
-app.use(cors({ origin: process.env.CORS_ORIGIN ?? 'http://localhost:5173', credentials: true }));
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (/^http:\/\/localhost(:\d+)?$/.test(origin)) return callback(null, true);
+    const allowed = (process.env.CORS_ORIGIN || '').split(',').map((s) => s.trim());
+    if (process.env.CORS_ORIGIN === '*' || allowed.includes(origin) || allowed.some(a => a && origin.endsWith(a))) {
+      return callback(null, true);
+    }
+    // Allow vercel, render, railway, and fly domains by default if not strictly overridden
+    if (!process.env.CORS_ORIGIN || origin.includes('vercel.app') || origin.includes('onrender.com') || origin.includes('railway.app')) {
+      return callback(null, true);
+    }
+    callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -39,7 +55,7 @@ app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // ─── Health Check ─────────────────────────────────────────────────────────────
 app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString(), service: 'Bind Build ERP API' });
+  res.json({ status: 'ok', timestamp: new Date().toISOString(), service: 'DND Studio CRM API' });
 });
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
@@ -53,6 +69,7 @@ app.use('/api/analytics', analyticsRouter);
 app.use('/api/proposals', proposalsRouter);
 app.use('/api/notifications', notificationsRouter);
 app.use('/api/search', searchRouter);
+app.use('/api/ai', aiRouter);
 
 // ─── 404 Handler ──────────────────────────────────────────────────────────────
 app.use((_req, res) => {
@@ -64,7 +81,7 @@ app.use(errorHandler);
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
-  console.log(`🚀 Bind Build ERP API running at http://localhost:${PORT}`);
+  console.log(`🚀 DND Studio CRM API running at http://localhost:${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/health`);
   startMeetingReminderCron();
 });

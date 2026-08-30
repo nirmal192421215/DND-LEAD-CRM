@@ -118,6 +118,27 @@ export default function CreateMeetingModal({ leadId, onClose, onCreated }: Props
             </div>
           </div>
 
+          {/* Google Meet Link Field */}
+          <div className="form-group">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+              <label className="form-label" style={{ marginBottom: 0 }}>Google Meet Link (Optional)</label>
+              <a
+                href="https://meet.google.com/new"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ fontSize: 11, color: '#38bdf8', textDecoration: 'none', fontWeight: 600 }}
+              >
+                + Create on Google Meet ↗
+              </a>
+            </div>
+            <input
+              className="form-input"
+              type="url"
+              placeholder="https://meet.google.com/abc-defg-hij"
+              onChange={(e) => set('meetingUrl', e.target.value)}
+            />
+          </div>
+
           <div className="modal-footer">
             <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
             <button type="submit" className="btn btn-primary" disabled={loading}>

@@ -4,6 +4,7 @@ import type { Lead } from '@bind-build/shared';
 import { formatBudget, stageLabel, STAGE_ORDER, SOURCE_ICONS } from '../../lib/utils';
 import api from '../../lib/api';
 import { useToast } from '../../context/ToastContext';
+import LiveCallDialerModal from './LiveCallDialerModal';
 
 interface Props {
   leads: Lead[];
@@ -11,8 +12,14 @@ interface Props {
 }
 
 const STAGE_COLORS: Record<string, string> = {
-  NEW: '#6c63ff', CONTACTED: '#38bdf8', MEETING: '#f5a623',
-  PROPOSAL: '#a78bfa', NEGOTIATION: '#fb923c', WON: '#10d9a0', LOST: '#ff5f7e',
+  NEW: '#6c63ff',
+  CONTACTED: '#38bdf8',
+  CALL_BACK: '#f59e0b',
+  MEETING: '#f5a623',
+  PROPOSAL: '#a78bfa',
+  NEGOTIATION: '#fb923c',
+  WON: '#10d9a0',
+  LOST: '#ff5f7e',
 };
 
 function cleanPhone(phone?: string) {
@@ -27,8 +34,12 @@ export default function KanbanBoard({ leads, onLeadMoved }: Props) {
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [dragOverLeadId, setDragOverLeadId] = useState<string | null>(null);
   const [movingId, setMovingId] = useState<string | null>(null);
+  const [callingLead, setCallingLead] = useState<Lead | null>(null);
 
-  const byStage = (stage: string) => leads.filter((l) => l.stage === stage);
+  const byStage = (stage: string) =>
+    leads
+      .filter((l) => l.stage === stage)
+      .sort((a, b) => (a.id || '').localeCompare(b.id || '', undefined, { numeric: true }));
 
   const handleDragStart = (e: React.DragEvent, leadId: string) => {
     draggingId.current = leadId;
@@ -219,6 +230,62 @@ export default function KanbanBoard({ leads, onLeadMoved }: Props) {
                       </div>
                     )}
 
+                    {/* Call Back Schedule Alert Badge */}
+                    {(lead.stage === 'CALL_BACK' || lead.callBackAt) && (
+                      <div style={{
+                        marginTop: 8,
+                        padding: '4px 8px',
+                        borderRadius: 6,
+                        background: 'rgba(245, 158, 11, 0.15)',
+                        border: '1px solid rgba(245, 158, 11, 0.35)',
+                        color: '#fbbf24',
+                        fontSize: 11,
+                        fontWeight: 600,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                      }}>
+                        <span>⏰ Call Back</span>
+                        <span style={{ fontSize: 10, opacity: 0.9 }}>
+                          {lead.callBackAt
+                            ? new Date(lead.callBackAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ', ' + new Date(lead.callBackAt).toLocaleDateString([], { month: 'short', day: 'numeric' })
+                            : (lead.callBackNote || 'Pending')}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Google Meet Scheduled Badge */}
+                    {(lead.stage === 'MEETING' || lead.meetingUrl) && (
+                      <div style={{
+                        marginTop: 8,
+                        padding: '4px 8px',
+                        borderRadius: 6,
+                        background: 'rgba(56, 189, 248, 0.12)',
+                        border: '1px solid rgba(56, 189, 248, 0.3)',
+                        color: '#38bdf8',
+                        fontSize: 11,
+                        fontWeight: 600,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                      }}>
+                        <span>🎥 Google Meet</span>
+                        {lead.meetingUrl ? (
+                          <a
+                            href={lead.meetingUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ color: '#38bdf8', textDecoration: 'underline', fontSize: 11 }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            Join ↗
+                          </a>
+                        ) : (
+                          <span style={{ fontSize: 10, opacity: 0.8 }}>Ready for Demo</span>
+                        )}
+                      </div>
+                    )}
+
                     {/* Quick Contact Action Icons (Call, WhatsApp, Email) */}
                     <div
                       style={{
@@ -232,9 +299,13 @@ export default function KanbanBoard({ leads, onLeadMoved }: Props) {
                       onClick={(e) => e.stopPropagation()}
                     >
                       {/* Call Icon */}
-                      <a
-                        href={lead.phone ? `tel:${lead.phone}` : '#'}
-                        title={lead.phone ? `Call ${lead.name} (${lead.phone})` : 'No phone number'}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCallingLead(lead);
+                        }}
+                        title={lead.phone ? `Start In-App Call & Timer with ${lead.name} (${lead.phone})` : 'No phone number'}
                         style={{
                           display: 'inline-flex',
                           alignItems: 'center',
@@ -245,6 +316,7 @@ export default function KanbanBoard({ leads, onLeadMoved }: Props) {
                           background: 'var(--bg-elevated)',
                           border: '1px solid var(--border)',
                           color: 'var(--text-secondary)',
+                          cursor: 'pointer',
                           transition: 'all 150ms',
                         }}
                         onMouseEnter={(e) => {
@@ -261,11 +333,11 @@ export default function KanbanBoard({ leads, onLeadMoved }: Props) {
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
                         </svg>
-                      </a>
+                      </button>
 
                       {/* WhatsApp Icon */}
                       <a
-                        href={lead.phone ? `https://wa.me/${cleanPhone(lead.phone)}?text=${encodeURIComponent(`Hi ${lead.name}, reaching out regarding your ${lead.projectType} project.`)}` : '#'}
+                        href={lead.phone ? `https://wa.me/${cleanPhone(lead.phone)}?text=${encodeURIComponent(`Hi ${lead.name}, reaching out from DND Studio regarding web & mobile app solutions.`)}` : '#'}
                         target="_blank"
                         rel="noopener noreferrer"
                         title={lead.phone ? `WhatsApp ${lead.name}` : 'No phone number'}
@@ -299,7 +371,7 @@ export default function KanbanBoard({ leads, onLeadMoved }: Props) {
 
                       {/* Email Icon */}
                       <a
-                        href={lead.email ? `mailto:${lead.email}?subject=${encodeURIComponent(`Follow-up: ${lead.projectType} Project`)}` : '#'}
+                        href={lead.email ? `mailto:${lead.email}?subject=${encodeURIComponent(`Website & Mobile App Solutions — DND Studio`)}` : '#'}
                         title={lead.email ? `Email ${lead.name} (${lead.email})` : 'No email'}
                         style={{
                           display: 'inline-flex',
@@ -329,6 +401,32 @@ export default function KanbanBoard({ leads, onLeadMoved }: Props) {
                           <polyline points="22,6 12,13 2,6" />
                         </svg>
                       </a>
+
+                      {/* Google Maps Icon */}
+                      {lead.projectDescription?.includes('http') && (
+                        <a
+                          href={lead.projectDescription.match(/https?:\/\/[^\s\n]+/)?.[0]}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title={`View ${lead.name} on Google Maps`}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: 28,
+                            height: 28,
+                            borderRadius: 8,
+                            background: 'var(--bg-elevated)',
+                            border: '1px solid var(--border)',
+                            color: '#ea4335',
+                            transition: 'all 150ms',
+                            marginLeft: 'auto',
+                            fontSize: 12,
+                          }}
+                        >
+                          📍
+                        </a>
+                      )}
                     </div>
 
                     {/* Drag handle hint */}
@@ -360,6 +458,18 @@ export default function KanbanBoard({ leads, onLeadMoved }: Props) {
           </div>
         );
       })}
+
+      {/* ── In-App Call Dialer & Duration Tracker Modal ── */}
+      {callingLead && (
+        <LiveCallDialerModal
+          lead={callingLead}
+          onClose={() => setCallingLead(null)}
+          onCallLogged={() => {
+            setCallingLead(null);
+            onLeadMoved();
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -70,7 +70,7 @@ export default function SettingsPage() {
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 800, marginBottom: 4 }}>{user.name}</div>
-          <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6 }}>{user.email}</div>
+          <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6 }}>{user.email} &bull; +91 9342626096</div>
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 7,
             padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 700,
@@ -164,9 +164,9 @@ export default function SettingsPage() {
         <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, marginBottom: 16 }}>System Information</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           {[
-            { label: 'Application', value: 'Bind Build ERP / CRM' },
-            { label: 'Version',     value: 'v1.0.0 Phase 4' },
-            { label: 'Database',    value: 'SQLite (local)' },
+            { label: 'Application', value: 'DND Studio CRM' },
+            { label: 'Company',     value: 'DND Studio' },
+            { label: 'Services',    value: 'Web, Portfolio & Apps' },
             { label: 'API Server',  value: 'http://localhost:4000' },
           ].map((item) => (
             <div key={item.label} style={{ background: 'var(--bg-elevated)', borderRadius: 'var(--radius-md)', padding: '12px 14px', border: '1px solid var(--border)' }}>

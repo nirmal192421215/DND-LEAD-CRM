@@ -54,14 +54,17 @@ export default function LeadsPage() {
     if (filterOwner === 'ME' && user) params.set('ownerId', user.id);
     params.set('limit', '1000');
     const { data } = await api.get(`/leads?${params}`);
-    setLeads(data.data);
+    const sorted = (data.data || []).sort((a: Lead, b: Lead) =>
+      (a.id || '').localeCompare(b.id || '', undefined, { numeric: true })
+    );
+    setLeads(sorted);
     setLoading(false);
   }, [filterStage, filterPriority, filterOwner, user]);
 
   useEffect(() => { fetchLeads(); }, [fetchLeads]);
 
   const PRIORITY_FILTERS = ['HOT', 'WARM', 'COLD'];
-  const STAGE_FILTERS = ['NEW', 'CONTACTED', 'MEETING', 'PROPOSAL', 'NEGOTIATION'];
+  const STAGE_FILTERS = ['NEW', 'CONTACTED', 'CALL_BACK', 'MEETING', 'PROPOSAL', 'NEGOTIATION'];
 
   const activeLeads = leads.filter((l) => !['WON', 'LOST'].includes(l.stage));
   const pipelineValue = activeLeads.reduce((a, l) => a + l.budgetLakhs, 0);

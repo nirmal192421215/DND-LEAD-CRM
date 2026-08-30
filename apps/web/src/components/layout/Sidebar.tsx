@@ -25,7 +25,7 @@ function useIsMobile() {
 }
 
 export default function Sidebar() {
-  const { user, logout, isPrincipal } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
 
@@ -34,7 +34,9 @@ export default function Sidebar() {
     navigate('/login');
   };
 
-  const roleLabel = isPrincipal ? 'Principal' : user?.role === 'ADMIN' ? 'Admin' : 'Sales';
+  const isAdmin = user?.role === 'ADMIN';
+  const isPrincipalRole = user?.role === 'PRINCIPAL';
+  const roleLabel = isAdmin ? 'Admin' : isPrincipalRole ? 'Principal' : 'Sales';
 
   // ─── Mobile: Bottom Navigation Bar ───────────────────────────────────────────
   if (isMobile) {
@@ -89,10 +91,10 @@ export default function Sidebar() {
     <aside className="sidebar">
       {/* Logo */}
       <div className="sidebar-logo">
-        <div className="sidebar-logo-icon">🏗</div>
+        <div className="sidebar-logo-icon">⚡</div>
         <div className="sidebar-logo-text">
-          Bind Build
-          <span>ERP · CRM</span>
+          DND Studio
+          <span>Web · App · Portfolio</span>
         </div>
       </div>
 
@@ -137,12 +139,13 @@ export default function Sidebar() {
             {/* Role badge */}
             <div style={{
               fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-              letterSpacing: '0.08em', color: isPrincipal ? 'var(--brand-light)' : 'var(--text-muted)',
+              letterSpacing: '0.08em',
+              color: isAdmin ? '#38bdf8' : isPrincipalRole ? 'var(--brand-light)' : 'var(--text-muted)',
               padding: '3px 8px',
-              background: isPrincipal ? 'var(--brand-dim)' : 'transparent',
+              background: isAdmin ? 'rgba(56,189,248,0.12)' : isPrincipalRole ? 'var(--brand-dim)' : 'transparent',
               borderRadius: 6, display: 'inline-block', marginBottom: 2,
             }}>
-              {isPrincipal ? '👑' : '💼'} {roleLabel}
+              {isAdmin ? '⚡' : isPrincipalRole ? '👑' : '💼'} {roleLabel}
             </div>
 
             {/* User card → navigates to settings */}

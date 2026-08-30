@@ -36,7 +36,8 @@ describe('KanbanBoard Component', () => {
 
     expect(screen.getByText('New')).toBeInTheDocument();
     expect(screen.getByText('Contacted')).toBeInTheDocument();
-    expect(screen.getByText('Meeting')).toBeInTheDocument();
+    expect(screen.getByText('Call Back')).toBeInTheDocument();
+    expect(screen.getByText('Google Meet')).toBeInTheDocument();
     expect(screen.getByText('Proposal')).toBeInTheDocument();
     expect(screen.getByText('Negotiation')).toBeInTheDocument();
     expect(screen.getByText('Won')).toBeInTheDocument();

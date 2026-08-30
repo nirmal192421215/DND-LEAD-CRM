@@ -9,7 +9,8 @@ export function stageLabel(stage: string): string {
   const labels: Record<string, string> = {
     NEW: 'New',
     CONTACTED: 'Contacted',
-    MEETING: 'Meeting',
+    CALL_BACK: 'Call Back',
+    MEETING: 'Google Meet',
     PROPOSAL: 'Proposal',
     NEGOTIATION: 'Negotiation',
     WON: 'Won',
@@ -37,7 +38,7 @@ export function formatDate(dateStr: string): string {
 }
 
 export const STAGE_ORDER: LeadStage[] = [
-  'NEW', 'CONTACTED', 'MEETING', 'PROPOSAL', 'NEGOTIATION', 'WON', 'LOST',
+  'NEW', 'CONTACTED', 'CALL_BACK', 'MEETING', 'PROPOSAL', 'NEGOTIATION', 'WON', 'LOST',
 ];
 
 export const SOURCE_ICONS: Record<string, string> = {

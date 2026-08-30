@@ -71,8 +71,12 @@ model Lead {
   wonAt              DateTime?
   lostReason         String?
   lostNote           String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  callBackAt             DateTime?
+  callBackNote           String?
+  meetingUrl             String?
+  totalCallDurationSecs  Int      @default(0)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
 
   // Relations
   activities Activity[]
@@ -89,15 +93,16 @@ model Lead {
 }
 
 model Activity {
-  id          String   @id @default(cuid())
-  leadId      String
-  lead        Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  type        String   // CALL | WHATSAPP | EMAIL | NOTE | MEETING | STAGE_CHANGE | FILE
-  text        String?
-  quote       Float?
-  createdById String
-  createdBy   User     @relation(fields: [createdById], references: [id])
-  createdAt   DateTime @default(now())
+  id           String   @id @default(cuid())
+  leadId       String
+  lead         Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  type         String   // CALL | WHATSAPP | EMAIL | NOTE | MEETING | STAGE_CHANGE | FILE
+  text         String?
+  quote        Float?
+  durationSecs Int?
+  createdById  String
+  createdBy    User     @relation(fields: [createdById], references: [id])
+  createdAt    DateTime @default(now())
 
   @@index([leadId])
   @@map("activities")
@@ -127,6 +132,7 @@ model Meeting {
   scheduledAt  DateTime
   durationMins Int      @default(60)
   completed    Boolean  @default(false)
+  meetingUrl   String?
   createdById  String
   createdBy    User     @relation(fields: [createdById], references: [id])
   createdAt    DateTime @default(now())

@@ -11,6 +11,7 @@ const CreateActivitySchema = z.object({
   type: z.enum(['CALL', 'WHATSAPP', 'EMAIL', 'NOTE', 'MEETING', 'STAGE_CHANGE', 'FILE']),
   text: z.string().optional(),
   quote: z.number().optional(),
+  durationSecs: z.number().int().nonnegative().optional(),
 });
 
 // GET /api/activities?leadId=xxx
@@ -32,6 +33,16 @@ activitiesRouter.post('/', async (req: AuthRequest, res: Response) => {
     data: { ...body, createdById: req.user!.userId },
     include: { createdBy: { select: { id: true, name: true, initials: true, avatar: true } } },
   });
+
+  if (body.durationSecs && body.durationSecs > 0) {
+    await prisma.lead.update({
+      where: { id: body.leadId },
+      data: {
+        totalCallDurationSecs: { increment: body.durationSecs },
+      },
+    }).catch(() => {});
+  }
+
   res.status(201).json({ success: true, data: activity });
 });
 

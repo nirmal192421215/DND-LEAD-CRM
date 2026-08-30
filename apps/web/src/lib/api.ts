@@ -3,65 +3,44 @@ import { MOCK_LEADS_RAW } from './mockData';
 import type { Lead } from './mockData';
 
 // Determine if we should run in browser-based database simulator mode
-const isVercel = window.location.hostname !== 'localhost';
+const isDemoMode = import.meta.env.VITE_USE_MOCK === 'true' ||
+  (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app') && !import.meta.env.VITE_API_URL);
 
-// Helper to initialize mock DB in localStorage
+// Helper to initialize mock DB in localStorage with all 50 DND leads
 function initMockDb() {
-  if (!localStorage.getItem('bb_leads')) {
-    const leads: Lead[] = MOCK_LEADS_RAW.map((item) => {
-      const winProb =
-        item.stage === 'WON' ? 100 :
-        item.stage === 'NEGOTIATION' ? 85 :
-        item.stage === 'PROPOSAL' ? 70 :
-        item.stage === 'MEETING' ? 50 :
-        item.stage === 'CONTACTED' ? 30 : 15;
-
-      const projectType =
-        item.area.includes('4000') ? 'Luxury Villa Architecture' :
-        item.area.includes('2000') ? '3 BHK Premium Interior' :
-        item.area.includes('1000') ? '2 BHK Compact Interior' : 'Apartment Interior Design';
-
-      const source = item.valid === 'In Service Area' ? 'Referral' : 'Google';
-
-      return {
-        id: item.id,
-        name: item.name,
-        projectType: projectType,
-        projectDescription: `Built-up area: ${item.area}. Service region: ${item.valid}. Location: ${item.location}.`,
-        location: item.location,
-        budgetLakhs: item.budgetLakhs,
-        source: source,
-        priority: item.priority as any,
-        stage: item.stage as any,
-        phone: item.phone,
-        email: item.email,
-        winProbability: winProb,
-        tags: JSON.stringify([item.valid === 'In Service Area' ? 'In Service Area' : 'Out of Service', item.area, `ID: ${item.id}`]),
-        createdAt: new Date(Date.now() - Math.random() * 10 * 24 * 3600 * 1000).toISOString(),
-        updatedAt: new Date().toISOString(),
-        activities: [
-          {
-            id: `act-${Math.random().toString(36).slice(2, 9)}`,
-            leadId: item.id,
-            type: 'NOTE',
-            text: `Lead ${item.id} captured. Service zone: ${item.valid}. Contact: ${item.phone}.`,
-            createdAt: new Date(Date.now() - 5 * 24 * 3600 * 1000).toISOString(),
-            createdById: 'admin-id',
-            createdBy: { name: 'AR.PARTHIBAN MOORTHY' }
-          }
-        ]
-      };
-    });
-    localStorage.setItem('bb_leads', JSON.stringify(leads));
+  if (!localStorage.getItem('dnd_leads_v3')) {
+    const defaultLeads: Lead[] = MOCK_LEADS_RAW.map((r, i) => ({
+      id: `DND-${String(i + 1).padStart(3, '0')}`,
+      name: r.name,
+      projectType: r.projectType || 'Custom Website & Mobile App',
+      projectDescription: `Google Maps: ${r.category}, Rating: ${r.rating}`,
+      location: `${r.city}, ${r.state}`,
+      budgetLakhs: r.budgetLakhs || 1.5,
+      source: 'Google',
+      priority: (r.priority as any) || 'HOT',
+      stage: 'NEW',
+      phone: r.phone || '+91 93426 26096',
+      email: `contact@${r.name.toLowerCase().replace(/[^a-z0-9]/g, '')}.com`,
+      winProbability: 15,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      activities: [],
+    }));
+    localStorage.setItem('bb_leads', JSON.stringify(defaultLeads));
+    localStorage.setItem('dnd_leads_v3', 'true');
   }
 }
 
-if (isVercel) {
+if (isDemoMode) {
   initMockDb();
 }
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:4000/api',
+  baseURL: import.meta.env.VITE_API_URL ?? (
+    typeof window !== 'undefined' && window.location.hostname === 'localhost'
+      ? 'http://localhost:4000/api'
+      : '/api'
+  ),
   withCredentials: true,
 });
 
@@ -72,8 +51,8 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Mock Interceptor for Vercel demo support
-if (isVercel) {
+// Mock Interceptor for demo support
+if (isDemoMode) {
   api.interceptors.request.use(async (config) => {
     config.adapter = async (cfg) => {
       const url = cfg.url || '';
@@ -88,7 +67,7 @@ if (isVercel) {
       // 1. POST /auth/login
       if (url.includes('/auth/login') && method === 'post') {
         const { email, password } = data;
-        if (email === 'arparthibanmoorthy@gmail.com' && password === 'password123') {
+        if (email === 'nirmalkumar00727@gmail.com' && password === 'password123') {
           localStorage.setItem('accessToken', 'mock-access-token');
           localStorage.setItem('refreshToken', 'mock-refresh-token');
           return {
@@ -103,10 +82,34 @@ if (isVercel) {
                 refreshToken: 'mock-refresh-token',
                 user: {
                   id: 'admin-id',
-                  email: 'arparthibanmoorthy@gmail.com',
-                  name: 'AR.PARTHIBAN MOORTHY',
+                  email: 'nirmalkumar00727@gmail.com',
+                  name: 'Nirmal kumar N',
+                  role: 'ADMIN',
+                  initials: 'N'
+                }
+              }
+            }
+          };
+        }
+        if (email === 'gayathrideva2007@gmail.com' && password === 'password123') {
+          localStorage.setItem('accessToken', 'mock-access-token');
+          localStorage.setItem('refreshToken', 'mock-refresh-token');
+          return {
+            status: 200,
+            statusText: 'OK',
+            headers: {},
+            config: cfg,
+            data: {
+              status: 'success',
+              data: {
+                accessToken: 'mock-access-token',
+                refreshToken: 'mock-refresh-token',
+                user: {
+                  id: 'principal-gd',
+                  email: 'gayathrideva2007@gmail.com',
+                  name: 'Gayathri Deva',
                   role: 'PRINCIPAL',
-                  initials: 'PM'
+                  initials: 'GD'
                 }
               }
             }
@@ -131,10 +134,10 @@ if (isVercel) {
             status: 'success',
             data: {
               id: 'admin-id',
-              email: 'arparthibanmoorthy@gmail.com',
-              name: 'AR.PARTHIBAN MOORTHY',
-              role: 'PRINCIPAL',
-              initials: 'PM'
+              email: 'nirmalkumar00727@gmail.com',
+              name: 'Nirmal kumar N',
+              role: 'ADMIN',
+              initials: 'N'
             }
           }
         };
@@ -163,9 +166,8 @@ if (isVercel) {
           data: {
             status: 'success',
             data: [
-              { id: 'admin-id', name: 'AR.PARTHIBAN MOORTHY', email: 'arparthibanmoorthy@gmail.com', role: 'PRINCIPAL', initials: 'PM' },
-              { id: 'sales-priya', name: 'Priya', email: 'priya@gmail.com', role: 'SALES', initials: 'P' },
-              { id: 'sales-rahul', name: 'Rahul', email: 'rahul@gmail.com', role: 'SALES', initials: 'R' }
+              { id: 'admin-id', name: 'Nirmal kumar N', email: 'nirmalkumar00727@gmail.com', role: 'ADMIN', initials: 'N' },
+              { id: 'principal-gd', name: 'Gayathri Deva', email: 'gayathrideva2007@gmail.com', role: 'PRINCIPAL', initials: 'GD' },
             ]
           }
         };
@@ -247,8 +249,8 @@ if (isVercel) {
 
         const leader = {
           id: 'admin-id',
-          name: 'AR.PARTHIBAN MOORTHY',
-          initials: 'PM',
+          name: 'Nirmal kumar N',
+          initials: 'N',
           role: 'PRINCIPAL',
           totalLeads: total,
           activeLeads: active,
@@ -442,7 +444,7 @@ if (isVercel) {
               text: `Stage changed from ${original.stage} to ${data.stage}.`,
               createdAt: new Date().toISOString(),
               createdById: 'admin-id',
-              createdBy: { name: 'AR.PARTHIBAN MOORTHY' }
+              createdBy: { name: 'Nirmal kumar N' }
             };
             updated.activities = [...(original.activities || []), act];
           }
@@ -478,7 +480,7 @@ if (isVercel) {
             quote: data.quote,
             createdAt: new Date().toISOString(),
             createdById: 'admin-id',
-            createdBy: { name: 'AR.PARTHIBAN MOORTHY' }
+            createdBy: { name: 'Nirmal kumar N' }
           };
           original.activities = [...(original.activities || []), newAct];
           leads[idx] = original;
@@ -505,10 +507,10 @@ if (isVercel) {
         const newLead: Lead = {
           id: newId,
           name: data.name,
-          projectType: data.projectType || 'Apartment Interior Design',
+          projectType: data.projectType || 'Website Building',
           projectDescription: data.projectDescription || '',
           location: data.location || 'Chennai',
-          budgetLakhs: data.budgetLakhs || 20,
+          budgetLakhs: data.budgetLakhs || 1.5,
           source: data.source || 'Referral',
           priority: data.priority || 'WARM',
           stage: 'NEW',
@@ -525,7 +527,7 @@ if (isVercel) {
               text: `Lead ${newId} created manually.`,
               createdAt: new Date().toISOString(),
               createdById: 'admin-id',
-              createdBy: { name: 'AR.PARTHIBAN MOORTHY' }
+              createdBy: { name: 'Nirmal kumar N' }
             }
           ]
         };
@@ -555,7 +557,7 @@ api.interceptors.response.use(
   (res) => res,
   async (err) => {
     const original = err.config;
-    if (err.response?.status === 401 && !original._retry && !isVercel) {
+    if (err.response?.status === 401 && !original._retry && !isDemoMode) {
       original._retry = true;
       try {
         const refreshToken = localStorage.getItem('refreshToken');

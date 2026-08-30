@@ -16,9 +16,9 @@ interface TeamMember {
 }
 
 const ROLE_CONFIG: Record<string, { label: string; icon: string; color: string; bg: string }> = {
+  ADMIN:     { label: 'Admin',     icon: '⚡', color: '#38bdf8',            bg: 'rgba(56,189,248,0.12)' },
   PRINCIPAL: { label: 'Principal', icon: '👑', color: 'var(--brand-light)', bg: 'var(--brand-dim)' },
   SALES:     { label: 'Sales',     icon: '💼', color: 'var(--sky)',         bg: 'var(--sky-dim)' },
-  ADMIN:     { label: 'Admin',     icon: '⚙️', color: 'var(--amber)',       bg: 'var(--amber-dim)' },
 };
 
 export default function TeamPage() {
@@ -89,7 +89,7 @@ export default function TeamPage() {
             👥 Team Members
           </div>
           <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-            {members.length} member{members.length !== 1 ? 's' : ''} · Bind Build ERP
+            {members.length} member{members.length !== 1 ? 's' : ''} · DND Studio
           </div>
         </div>
         {isPrincipal && (
@@ -211,7 +211,7 @@ export default function TeamPage() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
         {[
           { label: 'Total Members', value: members.length, icon: '👥' },
-          { label: 'Principals', value: members.filter((m) => m.role === 'PRINCIPAL').length, icon: '👑' },
+          { label: 'Admin & Principal', value: members.filter((m) => m.role === 'ADMIN' || m.role === 'PRINCIPAL').length, icon: '👑' },
           { label: 'Sales Reps', value: members.filter((m) => m.role === 'SALES').length, icon: '💼' },
         ].map((stat) => (
           <div key={stat.label} className="card" style={{ textAlign: 'center', padding: '16px 12px' }}>

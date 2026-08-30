@@ -176,7 +176,7 @@ export default function ProposalPanel({ leadId, proposal, leadBudget, onUpdated 
                   <!DOCTYPE html>
                   <html>
                     <head>
-                      <title>Proposal v${proposal.version} — Bind Build ERP</title>
+                      <title>Proposal v${proposal.version} — DND Studio CRM</title>
                       <style>
                         body { font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; color: #1e293b; max-width: 800px; margin: 0 auto; }
                         .header { display: flex; justify-content: space-between; border-bottom: 2px solid #6c63ff; padding-bottom: 20px; margin-bottom: 30px; }
@@ -191,8 +191,8 @@ export default function ProposalPanel({ leadId, proposal, leadBudget, onUpdated 
                     <body>
                       <div class="header">
                         <div>
-                          <div class="logo">BIND BUILD</div>
-                          <div style="font-size:12px; color:#64748b;">Interior Design & Construction</div>
+                          <div class="logo">DND STUDIO</div>
+                          <div style="font-size:12px; color:#64748b;">Websites, Portfolios & Mobile Apps</div>
                         </div>
                         <div style="text-align:right; font-size:13px; color:#64748b;">
                           <div>Date: ${formatDate(proposal.sentAt)}</div>
@@ -204,12 +204,12 @@ export default function ProposalPanel({ leadId, proposal, leadBudget, onUpdated 
                       <div class="box">
                         <div style="font-size:13px; color:#64748b; font-weight:600; text-transform:uppercase;">Total Commercial Offer</div>
                         <div class="amount">₹ ${proposal.amountLakhs.toFixed(2)} Lakhs</div>
-                        <div style="font-size:13px; color:#64748b; margin-top:12px;">Includes architectural scope, procurement management, site supervision, and final handover execution.</div>
+                        <div style="font-size:13px; color:#64748b; margin-top:12px;">Includes bespoke UI/UX design, web & mobile app engineering, testing, production deployment, and post-launch maintenance.</div>
                       </div>
                       <div style="margin-top:40px; display:flex; justify-content:space-between; padding-top:40px; border-top:1px dashed #cbd5e1;">
                         <div>
                           <div style="border-bottom:1px solid #94a3b8; width:200px; height:40px;"></div>
-                          <div style="font-size:12px; color:#64748b; margin-top:6px;">Authorized Signature (Bind Build)</div>
+                          <div style="font-size:12px; color:#64748b; margin-top:6px;">Authorized Signature (DND Studio)</div>
                         </div>
                         <div>
                           <div style="border-bottom:1px solid #94a3b8; width:200px; height:40px;"></div>
@@ -217,7 +217,7 @@ export default function ProposalPanel({ leadId, proposal, leadBudget, onUpdated 
                         </div>
                       </div>
                       <div class="footer">
-                        <div>Confidential Proposal — Bind Build ERP</div>
+                        <div>Confidential Proposal — DND Studio CRM</div>
                         <div>Page 1 of 1</div>
                       </div>
                       <script>window.onload = function() { window.print(); }</script>

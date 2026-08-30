@@ -21,6 +21,7 @@ export type LeadPriority = 'HOT' | 'WARM' | 'COLD';
 export type LeadStage =
   | 'NEW'
   | 'CONTACTED'
+  | 'CALL_BACK'
   | 'MEETING'
   | 'PROPOSAL'
   | 'NEGOTIATION'
@@ -84,6 +85,10 @@ export interface Lead {
   wonAt?: string | null;
   lostReason?: string | null;
   lostNote?: string | null;
+  callBackAt?: string | null;
+  callBackNote?: string | null;
+  meetingUrl?: string | null;
+  totalCallDurationSecs?: number;
   winProbability: number;
   tags: string[];
   owner?: Partial<User> | null;
@@ -96,6 +101,7 @@ export interface Activity {
   type: ActivityType;
   text?: string | null;
   quote?: string | null;
+  durationSecs?: number | null;
   createdById: string;
   createdAt: string;
 }
@@ -117,6 +123,7 @@ export interface Meeting {
   scheduledAt: string;
   durationMins: number;
   completed: boolean;
+  meetingUrl?: string | null;
   createdBy: User;
   createdAt: string;
 }

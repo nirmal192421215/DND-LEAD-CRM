@@ -36,7 +36,8 @@ describe('stageLabel', () => {
   it('returns human-readable label for known stages', () => {
     expect(stageLabel('NEW')).toBe('New');
     expect(stageLabel('CONTACTED')).toBe('Contacted');
-    expect(stageLabel('MEETING')).toBe('Meeting');
+    expect(stageLabel('CALL_BACK')).toBe('Call Back');
+    expect(stageLabel('MEETING')).toBe('Google Meet');
     expect(stageLabel('PROPOSAL')).toBe('Proposal');
     expect(stageLabel('NEGOTIATION')).toBe('Negotiation');
     expect(stageLabel('WON')).toBe('Won');
@@ -90,8 +91,8 @@ describe('formatDate', () => {
 
 // ── STAGE_ORDER ───────────────────────────────────────────────────────────────
 describe('STAGE_ORDER', () => {
-  it('has exactly 7 stages', () => {
-    expect(STAGE_ORDER).toHaveLength(7);
+  it('has exactly 8 stages', () => {
+    expect(STAGE_ORDER).toHaveLength(8);
   });
 
   it('starts with NEW and ends with LOST', () => {

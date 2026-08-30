@@ -52,28 +52,28 @@ export default function CreateLeadModal({ onClose, onCreated }: Props) {
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div className="form-grid">
             <div className="form-group">
-              <label className="form-label">Client Name *</label>
-              <input className="form-input" required value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="e.g. Ramesh & Priya Kumar" />
+              <label className="form-label">Client / Business Name *</label>
+              <input className="form-input" required value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="e.g. Apex Tech / Alex Smith" />
             </div>
             <div className="form-group">
               <label className="form-label">Project Type *</label>
-              <input className="form-input" required value={form.projectType} onChange={(e) => set('projectType', e.target.value)} placeholder="e.g. Residential Villa" />
+              <input className="form-input" required value={form.projectType} onChange={(e) => set('projectType', e.target.value)} placeholder="e.g. Website Building, Portfolio, Mobile App" />
             </div>
           </div>
 
           <div className="form-group">
             <label className="form-label">Project Description</label>
-            <textarea className="form-textarea" value={form.projectDescription} onChange={(e) => set('projectDescription', e.target.value)} placeholder="Brief description of project requirements…" />
+            <textarea className="form-textarea" value={form.projectDescription} onChange={(e) => set('projectDescription', e.target.value)} placeholder="Brief description of web, portfolio, or mobile app requirements…" />
           </div>
 
           <div className="form-grid">
             <div className="form-group">
               <label className="form-label">Location *</label>
-              <input className="form-input" required value={form.location} onChange={(e) => set('location', e.target.value)} placeholder="e.g. Koramangala, Bangalore" />
+              <input className="form-input" required value={form.location} onChange={(e) => set('location', e.target.value)} placeholder="e.g. Chennai, Remote, Bangalore" />
             </div>
             <div className="form-group">
               <label className="form-label">Budget (Lakhs) *</label>
-              <input className="form-input" type="number" required min="0" step="0.5" value={form.budgetLakhs} onChange={(e) => set('budgetLakhs', e.target.value)} placeholder="e.g. 45" />
+              <input className="form-input" type="number" required min="0" step="0.1" value={form.budgetLakhs} onChange={(e) => set('budgetLakhs', e.target.value)} placeholder="e.g. 1.5" />
             </div>
           </div>
 

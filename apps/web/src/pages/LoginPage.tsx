@@ -5,7 +5,7 @@ import { useToast } from '../context/ToastContext';
 export default function LoginPage() {
   const { login } = useAuth();
   const { toast } = useToast();
-  const [email, setEmail] = useState('arparthibanmoorthy@gmail.com');
+  const [email, setEmail] = useState('nirmalkumar00727@gmail.com');
   const [password, setPassword] = useState('password123');
   const [loading, setLoading] = useState(false);
 
@@ -22,9 +22,8 @@ export default function LoginPage() {
   };
 
   const demoUsers = [
-    { label: 'Ar. Parthiban (Admin)', email: 'arparthibanmoorthy@gmail.com' },
-    { label: 'Sales – Priya', email: 'priya@bindbuild.com' },
-    { label: 'Sales – Rahul', email: 'rahul@bindbuild.com' },
+    { label: 'Nirmal kumar N (Admin)', email: 'nirmalkumar00727@gmail.com' },
+    { label: 'Gayathri Deva (Principal)', email: 'gayathrideva2007@gmail.com' },
   ];
 
   return (
@@ -52,9 +51,9 @@ export default function LoginPage() {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 28, margin: '0 auto 20px',
             boxShadow: 'var(--shadow-brand)',
-          }}>🏗</div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 800, marginBottom: 8 }}>Bind Build ERP</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Interior & Architecture CRM Platform</p>
+          }}>⚡</div>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 800, marginBottom: 8 }}>DND Studio</h1>
+          <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Websites, Portfolios & Mobile Apps CRM</p>
         </div>
 
         {/* Card */}

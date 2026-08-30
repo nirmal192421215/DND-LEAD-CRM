@@ -20,7 +20,7 @@ export default function Topbar() {
   const isLeadDetail = pathname.startsWith('/leads/') && pathname !== '/leads';
   const meta = TITLES[pathname] ?? (isLeadDetail
     ? { title: 'Lead Detail', desc: 'Full lead profile' }
-    : { title: 'Bind Build ERP', desc: '' });
+    : { title: 'DND Studio CRM', desc: '' });
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);

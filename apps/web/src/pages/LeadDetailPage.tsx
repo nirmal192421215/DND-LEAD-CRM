@@ -5,8 +5,10 @@ import type { Lead, Activity, Note, Meeting } from '@bind-build/shared';
 import { formatBudget, stageLabel, timeAgo, formatDate, SOURCE_ICONS } from '../lib/utils';
 import { useToast } from '../context/ToastContext';
 import CreateMeetingModal from '../components/leads/CreateMeetingModal';
+import LiveCallDialerModal from '../components/leads/LiveCallDialerModal';
 import ProposalPanel from '../components/leads/ProposalPanel';
 import FilesPanel from '../components/leads/FilesPanel';
+import AISalesCopilot from '../components/leads/AISalesCopilot';
 
 type FileAsset = {
   id: string;
@@ -34,15 +36,19 @@ type FullLead = Lead & {
     createdBy: { name: string; initials: string };
   } | null;
   owner?: { id: string; name: string; initials?: string };
+  callBackAt?: string | null;
+  callBackNote?: string | null;
+  meetingUrl?: string | null;
 };
 
 const STEPPER_STAGES = [
   { key: 'NEW', label: 'New enquiry', stepNum: 1 },
   { key: 'CONTACTED', label: 'Contacted', stepNum: 2 },
-  { key: 'MEETING', label: 'Meeting', stepNum: 3 },
-  { key: 'PROPOSAL', label: 'Proposal sent', stepNum: 4 },
-  { key: 'NEGOTIATION', label: 'Negotiation', stepNum: 5 },
-  { key: 'WON', label: 'Won', stepNum: 6 },
+  { key: 'CALL_BACK', label: 'Call Back', stepNum: 3 },
+  { key: 'MEETING', label: 'Google Meet', stepNum: 4 },
+  { key: 'PROPOSAL', label: 'Proposal sent', stepNum: 5 },
+  { key: 'NEGOTIATION', label: 'Negotiation', stepNum: 6 },
+  { key: 'WON', label: 'Won 🎉', stepNum: 7 },
 ];
 
 function cleanPhone(phone?: string) {
@@ -56,7 +62,7 @@ export default function LeadDetailPage() {
   const { toast } = useToast();
   const [lead, setLead] = useState<FullLead | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<'timeline' | 'notes' | 'meetings' | 'proposal' | 'files'>('timeline');
+  const [tab, setTab] = useState<'timeline' | 'notes' | 'meetings' | 'proposal' | 'files' | 'ai'>('timeline');
   const [noteText, setNoteText] = useState('');
   const [savingNote, setSavingNote] = useState(false);
   const [actText, setActText] = useState('');
@@ -64,6 +70,22 @@ export default function LeadDetailPage() {
   const [showMeetingModal, setShowMeetingModal] = useState(false);
   const [editingWinProb, setEditingWinProb] = useState(false);
   const [winProbInput, setWinProbInput] = useState('');
+  const [showCallDialer, setShowCallDialer] = useState(false);
+
+  // DND Studio Sales Workflow Modal States
+  const [showCallBackModal, setShowCallBackModal] = useState(false);
+  const [callBackTime, setCallBackTime] = useState('');
+  const [callBackNote, setCallBackNote] = useState('');
+
+  const [showMeetModal, setShowMeetModal] = useState(false);
+  const [meetTitle, setMeetTitle] = useState('');
+  const [meetTime, setMeetTime] = useState('');
+  const [meetDuration, setMeetDuration] = useState(60);
+  const [meetUrl, setMeetUrl] = useState('');
+
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectReason, setRejectReason] = useState('Already has website / App');
+  const [rejectNote, setRejectNote] = useState('');
 
   const fetchLead = useCallback(async () => {
     const { data } = await api.get(`/leads/${id}`);
@@ -80,6 +102,81 @@ export default function LeadDetailPage() {
     await api.patch(`/leads/${id}`, { stage });
     fetchLead();
     toast(`Stage updated to ${stageLabel(stage)} ✓`, 'success');
+  };
+
+  const submitCallBack = async () => {
+    if (!callBackTime) {
+      toast('Please pick a callback date and time', 'error');
+      return;
+    }
+    try {
+      await api.patch(`/leads/${id}`, {
+        stage: 'CALL_BACK',
+        callBackAt: new Date(callBackTime).toISOString(),
+        callBackNote,
+      });
+      await api.post('/activities', {
+        leadId: id,
+        type: 'CALL',
+        text: `Client requested call back on ${new Date(callBackTime).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}.${callBackNote ? ' Note: ' + callBackNote : ''}`,
+      });
+      setShowCallBackModal(false);
+      fetchLead();
+      toast('Call Back scheduled & Stage updated ⏰', 'success');
+    } catch {
+      toast('Failed to schedule call back', 'error');
+    }
+  };
+
+  const submitGoogleMeet = async () => {
+    if (!meetTime) {
+      toast('Please pick a meeting date and time', 'error');
+      return;
+    }
+    try {
+      await api.patch(`/leads/${id}`, {
+        stage: 'MEETING',
+        meetingUrl: meetUrl || null,
+      });
+      await api.post('/meetings', {
+        leadId: id,
+        title: meetTitle || `DND Studio Demo with ${lead?.name}`,
+        type: 'VideoCall',
+        scheduledAt: new Date(meetTime).toISOString(),
+        durationMins: meetDuration || 60,
+        meetingUrl: meetUrl || null,
+      });
+      await api.post('/activities', {
+        leadId: id,
+        type: 'MEETING',
+        text: `Scheduled Google Meet demo on ${new Date(meetTime).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}.${meetUrl ? ' Meet Link: ' + meetUrl : ''}`,
+      });
+      setShowMeetModal(false);
+      fetchLead();
+      toast('Google Meet demo scheduled & Stage updated 🎥', 'success');
+    } catch {
+      toast('Failed to schedule meeting', 'error');
+    }
+  };
+
+  const submitReject = async () => {
+    try {
+      await api.patch(`/leads/${id}`, {
+        stage: 'LOST',
+        lostReason: rejectReason,
+        lostNote: rejectNote || null,
+      });
+      await api.post('/activities', {
+        leadId: id,
+        type: 'STAGE_CHANGE',
+        text: `Lead marked as Rejected / Lost. Reason: ${rejectReason}${rejectNote ? ' (' + rejectNote + ')' : ''}`,
+      });
+      setShowRejectModal(false);
+      fetchLead();
+      toast('Lead marked as Lost / Rejected ❌', 'info');
+    } catch {
+      toast('Failed to update stage', 'error');
+    }
   };
 
   const updateWinProb = async () => {
@@ -236,18 +333,19 @@ export default function LeadDetailPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
 
               {/* Call button */}
-              <a
-                href={lead.phone ? `tel:${lead.phone}` : '#'}
+              <button
+                type="button"
+                onClick={() => setShowCallDialer(true)}
                 className="btn btn-secondary btn-sm"
-                style={{ borderRadius: 20, padding: '8px 16px', gap: 6, fontSize: 13, fontWeight: 600 }}
+                style={{ borderRadius: 20, padding: '8px 16px', gap: 6, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" /></svg>
                 Call
-              </a>
+              </button>
 
               {/* WhatsApp button */}
               <a
-                href={lead.phone ? `https://wa.me/${cleanPhone(lead.phone)}?text=${encodeURIComponent(`Hi ${lead.name}, reaching out regarding your ${lead.projectType} project.`)}` : '#'}
+                href={lead.phone ? `https://wa.me/${cleanPhone(lead.phone)}?text=${encodeURIComponent(`Hi ${lead.name}, reaching out from DND Studio regarding custom website and mobile app solutions.`)}` : '#'}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn btn-secondary btn-sm"
@@ -259,13 +357,39 @@ export default function LeadDetailPage() {
 
               {/* Email button */}
               <a
-                href={lead.email ? `mailto:${lead.email}?subject=${encodeURIComponent(`Follow-up: ${lead.projectType} Project`)}` : '#'}
+                href={lead.email ? `mailto:${lead.email}?subject=${encodeURIComponent(`Website & Mobile App Solutions — DND Studio`)}` : '#'}
                 className="btn btn-secondary btn-sm"
                 style={{ borderRadius: 20, padding: '8px 16px', gap: 6, fontSize: 13, fontWeight: 600 }}
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>
                 Email
               </a>
+
+              {/* Google Maps button */}
+              {lead.projectDescription?.includes('http') && (
+                <a
+                  href={lead.projectDescription.match(/https?:\/\/[^\s\n]+/)?.[0]}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-secondary btn-sm"
+                  style={{ borderRadius: 20, padding: '8px 16px', gap: 6, fontSize: 13, fontWeight: 600, color: '#ea4335' }}
+                >
+                  📍 Google Maps
+                </a>
+              )}
+
+              {/* Google Meet join button if link exists */}
+              {lead.meetingUrl && (
+                <a
+                  href={lead.meetingUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-secondary btn-sm"
+                  style={{ borderRadius: 20, padding: '8px 16px', gap: 6, fontSize: 13, fontWeight: 600, color: '#38bdf8', borderColor: '#38bdf8' }}
+                >
+                  🎥 Join Google Meet
+                </a>
+              )}
 
               {/* Mark won button */}
               <button
@@ -286,7 +410,7 @@ export default function LeadDetailPage() {
 
               {/* Mark lost button */}
               <button
-                onClick={() => updateStage('LOST')}
+                onClick={() => setShowRejectModal(true)}
                 style={{
                   borderRadius: 20, padding: '8px 18px', fontSize: 13, fontWeight: 700,
                   background: 'var(--rose-dim)', color: 'var(--rose)',
@@ -374,10 +498,135 @@ export default function LeadDetailPage() {
           </div>
         </div>
 
+        {/* ── DND Studio Sales Workflow Action Hub ── */}
+        <div
+          className="card"
+          style={{
+            padding: '18px 22px',
+            background: 'linear-gradient(135deg, rgba(108,99,255,0.08) 0%, rgba(56,189,248,0.06) 100%)',
+            border: '1px solid rgba(108,99,255,0.22)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 16,
+          }}
+        >
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 16 }}>⚡</span>
+              <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-primary)' }}>Sales Outreach & Next Action Hub</span>
+              <span
+                style={{
+                  fontSize: 11,
+                  padding: '2px 9px',
+                  borderRadius: 12,
+                  fontWeight: 700,
+                  background: 'var(--bg-elevated)',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text-secondary)',
+                }}
+              >
+                Current: {stageLabel(lead.stage)}
+              </span>
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>
+              {lead.stage === 'NEW' && '👉 Make discovery call or WhatsApp outreach to introduce DND Studio services.'}
+              {lead.stage === 'CONTACTED' && '👉 Client reached! Did they ask to call back, confirm for Google Meet demo, or reject?'}
+              {lead.stage === 'CALL_BACK' && `👉 ⏰ Call back scheduled${lead.callBackAt ? ' for ' + new Date(lead.callBackAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : ''}. Ready to call back and confirm?`}
+              {lead.stage === 'MEETING' && (lead.meetingUrl ? `👉 🎥 Google Meet demo scheduled: ${lead.meetingUrl}` : '👉 Google Meet demo scheduled. Present website/mobile app portfolio.')}
+              {lead.stage === 'PROPOSAL' && '👉 Commercial quotation & scope sent. Awaiting client review.'}
+              {lead.stage === 'NEGOTIATION' && '👉 Finalizing commercial terms and advance payment.'}
+              {lead.stage === 'WON' && '🎉 Project signed & advance received! Development in progress.'}
+              {lead.stage === 'LOST' && `❌ Opportunity closed. Reason: ${lead.lostReason || 'Not interested'}${lead.lostNote ? ' (' + lead.lostNote + ')' : ''}`}
+            </div>
+          </div>
+
+          {/* Quick Action Decision Triggers */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={() => setShowCallDialer(true)}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '9px 16px', borderRadius: 20, fontSize: 13, fontWeight: 700,
+                background: 'linear-gradient(135deg, rgba(16,217,160,0.2) 0%, rgba(56,189,248,0.2) 100%)',
+                border: '1px solid rgba(16,217,160,0.5)',
+                color: '#10d9a0', cursor: 'pointer', transition: 'all 150ms',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-1px)')}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
+            >
+              <span>📞</span> Live Call & Timer
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowCallBackModal(true)}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '9px 16px', borderRadius: 20, fontSize: 13, fontWeight: 700,
+                background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.4)',
+                color: '#fbbf24', cursor: 'pointer', transition: 'all 150ms',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-1px)')}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
+            >
+              <span>⏰</span> Will Call Back
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowMeetModal(true)}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '9px 16px', borderRadius: 20, fontSize: 13, fontWeight: 700,
+                background: 'rgba(56,189,248,0.15)', border: '1px solid rgba(56,189,248,0.4)',
+                color: '#38bdf8', cursor: 'pointer', transition: 'all 150ms',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-1px)')}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
+            >
+              <span>🎥</span> Confirmed ➔ Google Meet
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setTab('ai')}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '9px 16px', borderRadius: 20, fontSize: 13, fontWeight: 700,
+                background: 'linear-gradient(135deg, rgba(167,139,250,0.2) 0%, rgba(108,99,255,0.2) 100%)',
+                border: '1px solid rgba(167,139,250,0.5)',
+                color: '#c4b5fd', cursor: 'pointer', transition: 'all 150ms',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-1px)')}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
+            >
+              <span>✨</span> AI Pitch Copilot
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowRejectModal(true)}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '9px 16px', borderRadius: 20, fontSize: 13, fontWeight: 700,
+                background: 'rgba(244,63,94,0.15)', border: '1px solid rgba(244,63,94,0.3)',
+                color: '#f43f5e', cursor: 'pointer', transition: 'all 150ms',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-1px)')}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
+            >
+              <span>❌</span> Reject / Lost
+            </button>
+          </div>
+        </div>
+
       </div>
 
-      {/* ── Main Content Body: 2 Columns ────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 20, alignItems: 'start' }}>
+      {/* ── Main 2-Column Grid ───────────────────────────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.85fr) minmax(320px, 1fr)', gap: 20, alignItems: 'start' }}>
 
         {/* ── Left Column: Tabs & Feed Content ────────────────────────────── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -398,6 +647,23 @@ export default function LeadDetailPage() {
             </button>
             <button className={`tab ${tab === 'proposal' ? 'active' : ''}`} onClick={() => setTab('proposal')}>
               Proposal {lead.proposal ? `(v${lead.proposal.version})` : ''}
+            </button>
+            <button
+              className={`tab ${tab === 'ai' ? 'active' : ''}`}
+              onClick={() => setTab('ai')}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                color: tab === 'ai' ? '#c4b5fd' : 'inherit',
+                fontWeight: 700,
+              }}
+            >
+              <span>✨ AI Sales Copilot</span>
+              <span style={{
+                fontSize: 10, background: 'linear-gradient(135deg, #a78bfa 0%, var(--brand) 100%)',
+                color: '#fff', padding: '1px 6px', borderRadius: 8, fontWeight: 800,
+              }}>
+                AI
+              </span>
             </button>
           </div>
 
@@ -520,9 +786,20 @@ export default function LeadDetailPage() {
                           padding: '12px 14px', marginLeft: 10,
                         }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                            <span style={{ fontSize: 11, fontWeight: 700, color: nodeColor, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                              {act.type.replace('_', ' ')}
-                            </span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: nodeColor, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                {act.type.replace('_', ' ')}
+                              </span>
+                              {act.durationSecs ? (
+                                <span style={{
+                                  display: 'inline-flex', alignItems: 'center', gap: 4,
+                                  fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 12,
+                                  background: 'rgba(56,189,248,0.15)', color: '#38bdf8', border: '1px solid rgba(56,189,248,0.35)',
+                                }}>
+                                  ⏱️ {Math.floor(act.durationSecs / 60)}m {act.durationSecs % 60}s talk time
+                                </span>
+                              ) : null}
+                            </div>
                             <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{timeAgo(act.createdAt)}</span>
                           </div>
                           <div style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.55 }}>
@@ -685,6 +962,14 @@ export default function LeadDetailPage() {
             />
           )}
 
+          {/* ── AI Sales Copilot Tab Content ───────────────────────────────── */}
+          {tab === 'ai' && (
+            <AISalesCopilot
+              lead={lead}
+              onStartCallWithScript={() => setShowCallDialer(true)}
+            />
+          )}
+
         </div>
 
         {/* ── Right Column: Contact Card & Deal Details Card ────────────── */}
@@ -703,11 +988,36 @@ export default function LeadDetailPage() {
                 <span style={{ fontSize: 14, color: 'var(--text-muted)', marginTop: 2 }}>📞</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500, marginBottom: 2 }}>Phone</div>
-                  <a href={`tel:${lead.phone}`} style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
-                    {lead.phone || '—'}
-                  </a>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
+                      {lead.phone || '—'}
+                    </span>
+                    {lead.phone && (
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => setShowCallDialer(true)}
+                        style={{ padding: '2px 8px', fontSize: 11, borderRadius: 12, color: '#38bdf8', borderColor: 'rgba(56,189,248,0.4)', cursor: 'pointer' }}
+                      >
+                        ⚡ Dial
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
+
+              {/* Total Talk Time */}
+              {(lead.totalCallDurationSecs ?? 0) > 0 && (
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                  <span style={{ fontSize: 14, color: '#38bdf8', marginTop: 2 }}>⏱️</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500, marginBottom: 2 }}>Total Talk Time</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#38bdf8' }}>
+                      {Math.floor((lead.totalCallDurationSecs ?? 0) / 60)}m {(lead.totalCallDurationSecs ?? 0) % 60}s ({lead.activities?.filter((a) => a.type === 'CALL').length ?? 1} calls)
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Email */}
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
@@ -737,7 +1047,7 @@ export default function LeadDetailPage() {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500, marginBottom: 2 }}>Scope / Profession</div>
                   <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
-                    {lead.projectType || 'Architecture & Design'}
+                    {lead.projectType || 'Web & App Development'}
                   </div>
                 </div>
               </div>
@@ -748,7 +1058,7 @@ export default function LeadDetailPage() {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500, marginBottom: 2 }}>Owner</div>
                   <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
-                    {lead.owner?.name ?? 'AR.PARTHIBAN MOORTHY'}
+                    {lead.owner?.name ?? 'Nirmal kumar N'}
                   </div>
                 </div>
               </div>
@@ -826,6 +1136,259 @@ export default function LeadDetailPage() {
             setTab('meetings');
             fetchLead();
             toast('Meeting scheduled! 📅', 'success');
+          }}
+        />
+      )}
+
+      {/* ── 1. Call Back Modal ── */}
+      {showCallBackModal && (
+        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowCallBackModal(false)}>
+          <div className="modal" style={{ maxWidth: 460 }}>
+            <div className="modal-header">
+              <h2 className="modal-title">⏰ Schedule Call Back</h2>
+              <button className="btn btn-ghost btn-icon" onClick={() => setShowCallBackModal(false)}>✕</button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
+                Client requested a follow-up call. Pick a callback time to set reminders and move to <strong>Call Back</strong> stage.
+              </p>
+
+              {/* Quick Presets */}
+              <div className="form-group">
+                <label className="form-label" style={{ marginBottom: 6 }}>Quick Time Presets</label>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {[
+                    { label: 'Today 4:00 PM', offsetHours: () => { const d = new Date(); d.setHours(16, 0, 0, 0); return d; } },
+                    { label: 'Today 6:30 PM', offsetHours: () => { const d = new Date(); d.setHours(18, 30, 0, 0); return d; } },
+                    { label: 'Tomorrow 11:00 AM', offsetHours: () => { const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(11, 0, 0, 0); return d; } },
+                    { label: 'Tomorrow 4:00 PM', offsetHours: () => { const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(16, 0, 0, 0); return d; } },
+                    { label: 'In 2 Days', offsetHours: () => { const d = new Date(); d.setDate(d.getDate() + 2); d.setHours(11, 0, 0, 0); return d; } },
+                  ].map((p) => (
+                    <button
+                      key={p.label}
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => {
+                        const local = p.offsetHours();
+                        const pad = (n: number) => String(n).padStart(2, '0');
+                        setCallBackTime(`${local.getFullYear()}-${pad(local.getMonth() + 1)}-${pad(local.getDate())}T${pad(local.getHours())}:${pad(local.getMinutes())}`);
+                      }}
+                      style={{ fontSize: 11, padding: '4px 10px' }}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Call Back Date & Time *</label>
+                <input
+                  type="datetime-local"
+                  className="form-input"
+                  required
+                  value={callBackTime}
+                  onChange={(e) => setCallBackTime(e.target.value)}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Call Back Note / Client Instruction</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. Owner in kitchen, call after lunch rush at 4 PM"
+                  value={callBackNote}
+                  onChange={(e) => setCallBackNote(e.target.value)}
+                />
+              </div>
+
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowCallBackModal(false)}>Cancel</button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={submitCallBack}
+                  style={{ background: '#f59e0b', borderColor: '#f59e0b', color: '#000', fontWeight: 700 }}
+                >
+                  ⏰ Save & Move to Call Back
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 2. Google Meet Modal ── */}
+      {showMeetModal && (
+        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowMeetModal(false)}>
+          <div className="modal" style={{ maxWidth: 480 }}>
+            <div className="modal-header">
+              <h2 className="modal-title">🎥 Schedule Google Meet Demo</h2>
+              <button className="btn btn-ghost btn-icon" onClick={() => setShowMeetModal(false)}>✕</button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
+                Client confirmed interest! Schedule the demo meeting, add your Google Meet link, and advance to <strong>Google Meet</strong> stage.
+              </p>
+
+              <div className="form-group">
+                <label className="form-label">Meeting Title</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. Website & Mobile App Demo Discussion"
+                  value={meetTitle}
+                  onChange={(e) => setMeetTitle(e.target.value)}
+                />
+              </div>
+
+              <div className="form-grid">
+                <div className="form-group">
+                  <label className="form-label">Scheduled Date & Time *</label>
+                  <input
+                    type="datetime-local"
+                    className="form-input"
+                    required
+                    value={meetTime}
+                    onChange={(e) => setMeetTime(e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Duration</label>
+                  <select
+                    className="form-select"
+                    value={meetDuration}
+                    onChange={(e) => setMeetDuration(Number(e.target.value))}
+                  >
+                    <option value={30}>30 mins</option>
+                    <option value={45}>45 mins</option>
+                    <option value={60}>1 hour</option>
+                    <option value={90}>1.5 hours</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <label className="form-label" style={{ marginBottom: 0 }}>Google Meet Link</label>
+                  <a
+                    href="https://meet.google.com/new"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ fontSize: 11, color: '#38bdf8', fontWeight: 600, textDecoration: 'none' }}
+                  >
+                    + Open meet.google.com/new ↗
+                  </a>
+                </div>
+                <input
+                  type="url"
+                  className="form-input"
+                  placeholder="https://meet.google.com/abc-defg-hij"
+                  value={meetUrl}
+                  onChange={(e) => setMeetUrl(e.target.value)}
+                />
+              </div>
+
+              {/* WhatsApp invitation preview */}
+              {lead.phone && (
+                <div style={{ padding: '10px 14px', background: 'rgba(37,211,102,0.08)', borderRadius: 8, border: '1px solid rgba(37,211,102,0.25)' }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: '#25D366', marginBottom: 4 }}>💬 WhatsApp Invitation to Client:</div>
+                  <a
+                    href={`https://wa.me/${cleanPhone(lead.phone)}?text=${encodeURIComponent(`Hi ${lead.name}, confirming our Google Meet demo on ${meetTime ? new Date(meetTime).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'our scheduled time'}.\nGoogle Meet Link: ${meetUrl || 'https://meet.google.com/new'}\n\nLooking forward to speaking with you! — Nirmal, DND Studio`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-secondary btn-sm"
+                    style={{ fontSize: 12, color: '#25D366', borderColor: '#25D366' }}
+                  >
+                    Send Meeting Link via WhatsApp ↗
+                  </a>
+                </div>
+              )}
+
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowMeetModal(false)}>Cancel</button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={submitGoogleMeet}
+                  style={{ background: '#38bdf8', borderColor: '#38bdf8', color: '#000', fontWeight: 700 }}
+                >
+                  🎥 Schedule & Move to Google Meet
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 3. Rejection / Lost Modal ── */}
+      {showRejectModal && (
+        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowRejectModal(false)}>
+          <div className="modal" style={{ maxWidth: 450 }}>
+            <div className="modal-header">
+              <h2 className="modal-title" style={{ color: 'var(--rose)' }}>❌ Mark Lead as Lost / Rejected</h2>
+              <button className="btn btn-ghost btn-icon" onClick={() => setShowRejectModal(false)}>✕</button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
+                Record why this lead declined or was rejected. This data improves future outreach targeting.
+              </p>
+
+              <div className="form-group">
+                <label className="form-label">Primary Reason *</label>
+                <select
+                  className="form-select"
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                >
+                  <option value="Already has website / App">Already has website / App</option>
+                  <option value="No budget right now">No budget right now</option>
+                  <option value="Not interested in digital solutions">Not interested in digital solutions</option>
+                  <option value="Did not answer / Call disconnected">Did not answer / Call disconnected</option>
+                  <option value="Went with competitor">Went with competitor</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Additional Feedback / Note (Optional)</label>
+                <textarea
+                  className="form-textarea"
+                  rows={2}
+                  placeholder="e.g. Owner stated they already hired a freelancer last month."
+                  value={rejectNote}
+                  onChange={(e) => setRejectNote(e.target.value)}
+                />
+              </div>
+
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowRejectModal(false)}>Cancel</button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={submitReject}
+                  style={{ background: 'var(--rose)', borderColor: 'var(--rose)', color: '#fff', fontWeight: 700 }}
+                >
+                  Confirm Rejection & Mark Lost
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 4. Live Call In-App Dialer & Duration Tracker Modal ── */}
+      {showCallDialer && lead && (
+        <LiveCallDialerModal
+          lead={lead}
+          onClose={() => setShowCallDialer(false)}
+          onCallLogged={() => {
+            fetchLead();
+            setTab('timeline');
           }}
         />
       )}
