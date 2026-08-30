@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Lead } from '@bind-build/shared';
 import { formatBudget, stageLabel, STAGE_ORDER, SOURCE_ICONS } from '../../lib/utils';
@@ -35,6 +35,68 @@ export default function KanbanBoard({ leads, onLeadMoved }: Props) {
   const [dragOverLeadId, setDragOverLeadId] = useState<string | null>(null);
   const [movingId, setMovingId] = useState<string | null>(null);
   const [callingLead, setCallingLead] = useState<Lead | null>(null);
+
+  // Automatic Call Detection when user switches back from phone dialer
+  useEffect(() => {
+    const handleKanbanCallReturn = async () => {
+      if (document.visibilityState === 'visible') {
+        const storedStart = sessionStorage.getItem('active_call_start');
+        const storedLeadId = sessionStorage.getItem('active_call_lead_id');
+        const storedName = sessionStorage.getItem('active_call_lead_name');
+
+        if (storedStart && storedLeadId) {
+          sessionStorage.removeItem('active_call_start');
+          sessionStorage.removeItem('active_call_lead_id');
+          sessionStorage.removeItem('active_call_lead_name');
+
+          const elapsedSecs = Math.max(0, Math.round((Date.now() - Number(storedStart)) / 1000));
+          if (elapsedSecs >= 3) {
+            const attended = elapsedSecs >= 8;
+            const mins = Math.floor(elapsedSecs / 60);
+            const secs = elapsedSecs % 60;
+            const durationFormatted = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+
+            const text = attended
+              ? `📞 Outbound Call Completed · Attended · Talk Time: ${durationFormatted}`
+              : `📞 Outbound Call Attempted · Not Attended / Busy (${durationFormatted})`;
+
+            try {
+              await api.post('/activities', {
+                leadId: storedLeadId,
+                type: 'CALL',
+                durationSecs: elapsedSecs,
+                text,
+              });
+
+              // Promote to CONTACTED if NEW
+              const targetLead = leads.find((l) => l.id === storedLeadId);
+              if (targetLead && targetLead.stage === 'NEW') {
+                await api.patch(`/leads/${storedLeadId}`, { stage: 'CONTACTED' });
+              }
+
+              onLeadMoved();
+              toast(
+                attended
+                  ? `✓ Call attended with ${storedName || 'lead'} (${durationFormatted}) logged to timeline!`
+                  : `📞 Call attempted (${durationFormatted}) recorded`,
+                'success'
+              );
+            } catch {
+              // Ignore background logging errors
+            }
+          }
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleKanbanCallReturn);
+    window.addEventListener('focus', handleKanbanCallReturn);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleKanbanCallReturn);
+      window.removeEventListener('focus', handleKanbanCallReturn);
+    };
+  }, [leads, onLeadMoved, toast]);
 
   const byStage = (stage: string) =>
     leads
@@ -303,9 +365,17 @@ export default function KanbanBoard({ leads, onLeadMoved }: Props) {
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          setCallingLead(lead);
+                          if (!lead.phone) {
+                            toast('No phone number for this lead', 'warning');
+                            return;
+                          }
+                          const now = Date.now();
+                          sessionStorage.setItem('active_call_start', now.toString());
+                          sessionStorage.setItem('active_call_lead_id', lead.id);
+                          sessionStorage.setItem('active_call_lead_name', lead.name);
+                          window.location.href = `tel:${cleanPhone(lead.phone)}`;
                         }}
-                        title={lead.phone ? `Start In-App Call & Timer with ${lead.name} (${lead.phone})` : 'No phone number'}
+                        title={lead.phone ? `Direct Call ${lead.name} (${lead.phone})` : 'No phone number'}
                         style={{
                           display: 'inline-flex',
                           alignItems: 'center',

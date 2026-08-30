@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import type { Lead, Activity, Note, Meeting } from '@bind-build/shared';
@@ -72,6 +72,14 @@ export default function LeadDetailPage() {
   const [winProbInput, setWinProbInput] = useState('');
   const [showCallDialer, setShowCallDialer] = useState(false);
 
+  // Direct Phone Call Tracking & Automatic Detection
+  const callStartTimeRef = useRef<number | null>(null);
+  const [callDetectionBanner, setCallDetectionBanner] = useState<{
+    durationSecs: number;
+    attended: boolean;
+    durationFormatted: string;
+  } | null>(null);
+
   // DND Studio Sales Workflow Modal States
   const [showCallBackModal, setShowCallBackModal] = useState(false);
   const [callBackTime, setCallBackTime] = useState('');
@@ -96,6 +104,103 @@ export default function LeadDetailPage() {
   useEffect(() => {
     fetchLead();
   }, [fetchLead]);
+
+  // Initiate direct phone call to device dialer
+  const handleInitiatePhoneCall = () => {
+    if (!lead?.phone) {
+      toast('No phone number available for this lead', 'warning');
+      return;
+    }
+    const now = Date.now();
+    callStartTimeRef.current = now;
+    sessionStorage.setItem('active_call_start', now.toString());
+    sessionStorage.setItem('active_call_lead_id', lead.id);
+    // Directly launch native device phone dialer
+    window.location.href = `tel:${cleanPhone(lead.phone)}`;
+  };
+
+  // Automatic Call Detection when user switches back from phone dialer
+  useEffect(() => {
+    const handleCallReturn = async () => {
+      if (document.visibilityState === 'visible') {
+        const storedStart = sessionStorage.getItem('active_call_start');
+        const storedLeadId = sessionStorage.getItem('active_call_lead_id');
+        const startTime = storedStart ? Number(storedStart) : callStartTimeRef.current;
+
+        if (startTime && (!storedLeadId || storedLeadId === id)) {
+          // Clear immediately so it does not trigger again
+          sessionStorage.removeItem('active_call_start');
+          sessionStorage.removeItem('active_call_lead_id');
+          callStartTimeRef.current = null;
+
+          const elapsedSecs = Math.max(0, Math.round((Date.now() - startTime) / 1000));
+
+          // Only process if user was away for at least 3 seconds (avoiding immediate accidental click)
+          if (elapsedSecs >= 3) {
+            // Under 8 seconds indicates call was not answered / canceled / busy
+            // 8 seconds or more indicates the call was connected and attended
+            const attended = elapsedSecs >= 8;
+            const mins = Math.floor(elapsedSecs / 60);
+            const secs = elapsedSecs % 60;
+            const durationFormatted = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+
+            const callText = attended
+              ? `📞 Outbound Call Completed · Attended · Talk Time: ${durationFormatted}`
+              : `📞 Outbound Call Attempted · Not Attended / Busy (${durationFormatted})`;
+
+            // 1. Switch tab to timeline and set actType to 'CALL'
+            setTab('timeline');
+            setActType('CALL');
+
+            // 2. Pre-fill the composer text area (Image 2) so user sees it
+            setActText(callText);
+
+            // 3. Set a banner notification in the timeline composer
+            setCallDetectionBanner({
+              durationSecs: elapsedSecs,
+              attended,
+              durationFormatted,
+            });
+
+            // 4. Automatically save this activity to the server so it appears in the chat/timeline feed
+            try {
+              await api.post('/activities', {
+                leadId: id,
+                type: 'CALL',
+                durationSecs: elapsedSecs,
+                text: callText,
+              });
+
+              // Promote lead stage to CONTACTED if NEW
+              if (lead?.stage === 'NEW') {
+                await api.patch(`/leads/${id}`, { stage: 'CONTACTED' });
+              }
+
+              // Refresh lead data so the new activity instantly displays in the timeline chat
+              fetchLead();
+
+              toast(
+                attended
+                  ? `✓ Call attended (${durationFormatted}) logged to chat timeline!`
+                  : `📞 Call not attended (${durationFormatted}) recorded`,
+                'success'
+              );
+            } catch {
+              toast(`Detected call: ${durationFormatted}. Click 'Log activity' to save.`, 'info');
+            }
+          }
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleCallReturn);
+    window.addEventListener('focus', handleCallReturn);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleCallReturn);
+      window.removeEventListener('focus', handleCallReturn);
+    };
+  }, [id, lead?.stage, fetchLead, toast]);
 
   const updateStage = async (stage: string) => {
     if (stage === lead?.stage) return;
@@ -335,7 +440,7 @@ export default function LeadDetailPage() {
               {/* Call button */}
               <button
                 type="button"
-                onClick={() => setShowCallDialer(true)}
+                onClick={handleInitiatePhoneCall}
                 className="btn btn-secondary btn-sm"
                 style={{ borderRadius: 20, padding: '8px 16px', gap: 6, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
               >
@@ -546,7 +651,7 @@ export default function LeadDetailPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             <button
               type="button"
-              onClick={() => setShowCallDialer(true)}
+              onClick={handleInitiatePhoneCall}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 6,
                 padding: '9px 16px', borderRadius: 20, fontSize: 13, fontWeight: 700,
@@ -676,6 +781,36 @@ export default function LeadDetailPage() {
                 background: 'var(--bg-elevated)', borderRadius: 'var(--radius-lg)',
                 border: '1px solid var(--border)', padding: 16,
               }}>
+                {/* Detected Call Result Banner */}
+                {callDetectionBanner && (
+                  <div style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    background: callDetectionBanner.attended ? 'rgba(16,217,160,0.12)' : 'rgba(245,166,35,0.12)',
+                    border: `1px solid ${callDetectionBanner.attended ? 'rgba(16,217,160,0.35)' : 'rgba(245,166,35,0.35)'}`,
+                    borderRadius: 'var(--radius-md)', padding: '10px 14px', marginBottom: 14,
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ fontSize: 18 }}>{callDetectionBanner.attended ? '✅' : '📵'}</span>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: callDetectionBanner.attended ? '#10d9a0' : '#f5a623' }}>
+                          {callDetectionBanner.attended ? 'Call Attended' : 'Call Not Attended / Busy'} · {callDetectionBanner.durationFormatted}
+                        </div>
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                          Automatically detected and saved to timeline chat below ✓
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setCallDetectionBanner(null)}
+                      style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 14 }}
+                      title="Dismiss"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
+
                 {/* Type Selection Pill Buttons */}
                 <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
                   {[
@@ -966,7 +1101,7 @@ export default function LeadDetailPage() {
           {tab === 'ai' && (
             <AISalesCopilot
               lead={lead}
-              onStartCallWithScript={() => setShowCallDialer(true)}
+              onStartCallWithScript={handleInitiatePhoneCall}
             />
           )}
 
@@ -996,7 +1131,7 @@ export default function LeadDetailPage() {
                       <button
                         type="button"
                         className="btn btn-secondary btn-sm"
-                        onClick={() => setShowCallDialer(true)}
+                        onClick={handleInitiatePhoneCall}
                         style={{ padding: '2px 8px', fontSize: 11, borderRadius: 12, color: '#38bdf8', borderColor: 'rgba(56,189,248,0.4)', cursor: 'pointer' }}
                       >
                         ⚡ Dial

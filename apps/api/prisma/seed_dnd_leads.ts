@@ -770,8 +770,8 @@ async function main() {
 
   const gayathri = await prisma.user.upsert({
     where: { email: 'gayathrideva2007@gmail.com' },
-    update: { name: 'Gayathri Deva', role: 'PRINCIPAL', initials: 'GD' },
-    create: { email: 'gayathrideva2007@gmail.com', password: passwordHash, name: 'Gayathri Deva', role: 'PRINCIPAL', initials: 'GD' },
+    update: { name: 'Gayathri', role: 'PRINCIPAL', initials: 'G' },
+    create: { email: 'gayathrideva2007@gmail.com', password: passwordHash, name: 'Gayathri', role: 'PRINCIPAL', initials: 'G' },
   });
 
   // Clear existing leads

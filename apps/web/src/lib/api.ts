@@ -107,9 +107,9 @@ if (isDemoMode) {
                 user: {
                   id: 'principal-gd',
                   email: 'gayathrideva2007@gmail.com',
-                  name: 'Gayathri Deva',
+                  name: 'Gayathri',
                   role: 'PRINCIPAL',
-                  initials: 'GD'
+                  initials: 'G'
                 }
               }
             }
@@ -167,7 +167,7 @@ if (isDemoMode) {
             status: 'success',
             data: [
               { id: 'admin-id', name: 'Nirmal kumar N', email: 'nirmalkumar00727@gmail.com', role: 'ADMIN', initials: 'N' },
-              { id: 'principal-gd', name: 'Gayathri Deva', email: 'gayathrideva2007@gmail.com', role: 'PRINCIPAL', initials: 'GD' },
+              { id: 'principal-gd', name: 'Gayathri', email: 'gayathrideva2007@gmail.com', role: 'PRINCIPAL', initials: 'G' },
             ]
           }
         };

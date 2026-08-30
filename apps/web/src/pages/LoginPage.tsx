@@ -23,7 +23,7 @@ export default function LoginPage() {
 
   const demoUsers = [
     { label: 'Nirmal kumar N (Admin)', email: 'nirmalkumar00727@gmail.com' },
-    { label: 'Gayathri Deva (Principal)', email: 'gayathrideva2007@gmail.com' },
+    { label: 'Gayathri', email: 'gayathrideva2007@gmail.com' },
   ];
 
   return (
