@@ -626,7 +626,7 @@ export default function LeadDetailPage() {
       </div>
 
       {/* ── Main 2-Column Grid ───────────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.85fr) minmax(320px, 1fr)', gap: 20, alignItems: 'start' }}>
+      <div className="lead-detail-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.85fr) minmax(320px, 1fr)', gap: 20, alignItems: 'start' }}>
 
         {/* ── Left Column: Tabs & Feed Content ────────────────────────────── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -785,9 +785,9 @@ export default function LeadDetailPage() {
                           borderRadius: 'var(--radius-md)', border: '1px solid var(--border)',
                           padding: '12px 14px', marginLeft: 10,
                         }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <span style={{ fontSize: 11, fontWeight: 700, color: nodeColor, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4, flexWrap: 'wrap', gap: 4 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: nodeColor, textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
                                 {act.type.replace('_', ' ')}
                               </span>
                               {act.durationSecs ? (

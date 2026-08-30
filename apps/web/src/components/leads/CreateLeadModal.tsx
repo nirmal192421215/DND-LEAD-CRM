@@ -50,6 +50,11 @@ export default function CreateLeadModal({ onClose, onCreated }: Props) {
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div className="form-group">
+            <label className="form-label">Lead Code / Serial Number</label>
+            <input className="form-input" disabled value="Auto-generated on save" style={{ background: 'var(--bg-elevated)', color: 'var(--brand)' }} />
+          </div>
+
           <div className="form-grid">
             <div className="form-group">
               <label className="form-label">Client / Business Name *</label>
