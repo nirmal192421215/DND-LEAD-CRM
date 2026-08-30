@@ -320,7 +320,7 @@ export default function LeadDetailPage() {
                   <span>·</span>
                   <span>{lead.location}</span>
                   <span>·</span>
-                  <span>Lead <strong>{lead.id}</strong></span>
+                  <span>Lead <strong>DND-{lead.serialNo?.toString().padStart(3, '0') ?? 'NEW'}</strong></span>
                   <span>·</span>
                   <span>created {formatDate(lead.createdAt)}</span>
                   <span>·</span>

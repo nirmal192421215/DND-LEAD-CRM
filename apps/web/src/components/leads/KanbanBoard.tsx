@@ -195,7 +195,7 @@ export default function KanbanBoard({ leads, onLeadMoved }: Props) {
                           color: 'var(--brand-light)', background: 'var(--brand-dim)',
                           padding: '1px 6px', borderRadius: 4, border: '1px solid rgba(108,99,255,0.2)',
                         }}>
-                          {lead.id}
+                          DND-{lead.serialNo?.toString().padStart(3, '0') ?? 'NEW'}
                         </span>
                         <span className={`priority-badge priority-${lead.priority}`}>
                           {lead.priority === 'HOT' ? '🔥' : lead.priority === 'WARM' ? '🌤' : '❄️'}

@@ -69,6 +69,7 @@ export interface User {
 
 export interface Lead {
   id: string;
+  serialNo: number;
   name: string;
   projectType: string;
   projectDescription?: string | null;

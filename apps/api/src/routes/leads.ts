@@ -9,7 +9,7 @@ export const leadsRouter = Router();
 leadsRouter.use(authenticate);
 
 const LEAD_SELECT = {
-  id: true, name: true, projectType: true, projectDescription: true, location: true,
+  id: true, serialNo: true, name: true, projectType: true, projectDescription: true, location: true,
   budgetLakhs: true, source: true, priority: true, stage: true, phone: true, email: true,
   winProbability: true, tags: true, stageChangedAt: true, wonAt: true, lostReason: true,
   lostNote: true, callBackAt: true, callBackNote: true, meetingUrl: true, totalCallDurationSecs: true, createdAt: true, updatedAt: true, ownerId: true,

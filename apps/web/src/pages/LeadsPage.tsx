@@ -212,7 +212,7 @@ export default function LeadsPage() {
                       padding: '3px 8px', borderRadius: 6, border: '1px solid rgba(108,99,255,0.2)',
                       whiteSpace: 'nowrap', display: 'inline-block'
                     }}>
-                      {lead.id}
+                      DND-{lead.serialNo?.toString().padStart(3, '0') ?? 'NEW'}
                     </span>
                   </td>
                   <td>

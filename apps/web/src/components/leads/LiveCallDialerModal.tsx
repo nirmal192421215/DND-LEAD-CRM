@@ -14,7 +14,7 @@ type CallOutcome = 'CONTACTED' | 'CALL_BACK' | 'MEETING' | 'LOST' | 'GENERAL';
 
 export default function LiveCallDialerModal({ lead, onClose, onCallLogged }: Props) {
   const { toast } = useToast();
-  const [callStatus, setCallStatus] = useState<CallStatus>('DIALING');
+  const [callStatus, setCallStatus] = useState<CallStatus | 'READY'>('READY');
   const [seconds, setSeconds] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
   const [showDialpad, setShowDialpad] = useState(false);
@@ -38,14 +38,7 @@ export default function LiveCallDialerModal({ lead, onClose, onCallLogged }: Pro
       .catch(() => {});
   }, [lead.id, aiStage, aiLanguage]);
 
-  // Auto-connect dialer after 1.5 seconds and trigger tel: link for seamless cellular/FaceTime bridge
-  useEffect(() => {
-    const connectTimer = setTimeout(() => {
-      setCallStatus('IN_CALL');
-    }, 1500);
-
-    return () => clearTimeout(connectTimer);
-  }, []);
+  // Auto-connect dialer removed - now requires manual click
 
   // Timer counter when IN_CALL
   useEffect(() => {
@@ -191,8 +184,27 @@ export default function LiveCallDialerModal({ lead, onClose, onCallLogged }: Pro
             </div>
           </div>
 
-          {/* ── STATE 1 & 2: DIALING / IN_CALL ── */}
-          {callStatus !== 'ENDED' ? (
+          {/* ── STATE 0: READY ── */}
+          {callStatus === 'READY' ? (
+            <div style={{ textAlign: 'center', marginTop: 24, marginBottom: 24 }}>
+              <a
+                href={`tel:${lead.phone}`}
+                onClick={() => setCallStatus('IN_CALL')}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 10,
+                  padding: '16px 32px', borderRadius: 30,
+                  background: 'var(--brand)', color: '#fff',
+                  fontSize: 18, fontWeight: 800, textDecoration: 'none',
+                  boxShadow: '0 8px 24px rgba(108,99,255,0.4)',
+                }}
+              >
+                <span>📞</span> Open Dialer & Start Call
+              </a>
+              <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 16 }}>
+                Clicking this will open your phone app and start the call timer.
+              </div>
+            </div>
+          ) : callStatus !== 'ENDED' ? (
             <div>
               {/* Call Status & Live Timer */}
               <div style={{
@@ -298,21 +310,7 @@ export default function LiveCallDialerModal({ lead, onClose, onCallLogged }: Pro
                   <span>✨</span> AI Script
                 </button>
 
-                {/* Direct Cellular / FaceTime Bridge link */}
-                <a
-                  href={`tel:${lead.phone}`}
-                  style={{
-                    padding: '8px 16px', borderRadius: 20,
-                    background: 'rgba(56,189,248,0.12)',
-                    border: '1px solid rgba(56,189,248,0.3)',
-                    color: '#38bdf8',
-                    fontSize: 12, fontWeight: 600, textDecoration: 'none',
-                    display: 'flex', alignItems: 'center', gap: 6,
-                  }}
-                  title="Dial via connected iPhone / FaceTime / Phone App"
-                >
-                  <span>📲</span> Cellular Link
-                </a>
+
               </div>
 
               {/* Collapsible AI Script Prompts */}

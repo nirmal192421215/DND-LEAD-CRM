@@ -54,6 +54,7 @@ model RefreshToken {
 
 model Lead {
   id                 String   @id @default(cuid())
+  serialNo           Int      @default(autoincrement())
   name               String
   projectType        String
   projectDescription String?
