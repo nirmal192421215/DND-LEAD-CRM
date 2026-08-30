@@ -55,7 +55,7 @@ export default function LeadsPage() {
     params.set('limit', '1000');
     const { data } = await api.get(`/leads?${params}`);
     const sorted = (data.data || []).sort((a: Lead, b: Lead) =>
-      (a.id || '').localeCompare(b.id || '', undefined, { numeric: true })
+      (a.serialNo || 0) - (b.serialNo || 0)
     );
     setLeads(sorted);
     setLoading(false);

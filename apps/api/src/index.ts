@@ -6,7 +6,7 @@ import path from 'path';
 import { startMeetingReminderCron } from './lib/meetingReminders';
 
 import { authRouter } from './routes/auth';
-import { leadsRouter } from './routes/leads';
+import { leadsRouter, alignSerialNumbers } from './routes/leads';
 import { activitiesRouter } from './routes/activities';
 import { notesRouter } from './routes/notes';
 import { meetingsRouter } from './routes/meetings';
@@ -80,10 +80,11 @@ app.use((_req, res) => {
 app.use(errorHandler);
 
 // ─── Start ────────────────────────────────────────────────────────────────────
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`🚀 DND Studio CRM API running at http://localhost:${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/health`);
   startMeetingReminderCron();
+  await alignSerialNumbers();
 });
 
 export default app;

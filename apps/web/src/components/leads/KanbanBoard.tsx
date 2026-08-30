@@ -101,7 +101,7 @@ export default function KanbanBoard({ leads, onLeadMoved }: Props) {
   const byStage = (stage: string) =>
     leads
       .filter((l) => l.stage === stage)
-      .sort((a, b) => (a.id || '').localeCompare(b.id || '', undefined, { numeric: true }));
+      .sort((a, b) => (a.serialNo || 0) - (b.serialNo || 0));
 
   const handleDragStart = (e: React.DragEvent, leadId: string) => {
     draggingId.current = leadId;

@@ -72,7 +72,7 @@ leadsRouter.get('/', async (req: AuthRequest, res: Response) => {
     prisma.lead.findMany({
       where,
       select: LEAD_SELECT,
-      orderBy: { id: 'asc' },
+      orderBy: { serialNo: 'asc' },
       skip: (pageNum - 1) * limitNum,
       take: limitNum,
     }),
@@ -81,6 +81,47 @@ leadsRouter.get('/', async (req: AuthRequest, res: Response) => {
 
   const parsed = leads.map((l: Record<string, unknown>) => ({ ...l, tags: JSON.parse((l['tags'] as string) ?? '[]') }));
   res.json({ success: true, data: parsed, total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) });
+});
+
+// Helper to align existing leads from 1 to N and set sequence to continue from max + 1
+export async function alignSerialNumbers() {
+  try {
+    const minLead = await prisma.lead.findFirst({
+      orderBy: { serialNo: 'asc' },
+      select: { serialNo: true },
+    });
+
+    // If lowest serial number is > 1 (e.g. 103), re-number existing leads 1..N
+    if (minLead && minLead.serialNo > 1) {
+      console.log('🔄 Re-aligning lead serial numbers to start from 1, 2, 3...');
+      await prisma.$executeRawUnsafe(`
+        WITH numbered AS (
+          SELECT id, ROW_NUMBER() OVER (ORDER BY "createdAt" ASC, id ASC) as rn
+          FROM leads
+        )
+        UPDATE leads
+        SET "serialNo" = numbered.rn
+        FROM numbered
+        WHERE leads.id = numbered.id;
+      `);
+
+      await prisma.$executeRawUnsafe(`
+        SELECT setval(
+          pg_get_serial_sequence('leads', 'serialNo'),
+          COALESCE((SELECT MAX("serialNo") FROM leads), 0) + 1,
+          false
+        );
+      `);
+      console.log('✅ Serial numbers successfully re-aligned from 1 to N!');
+    }
+  } catch (err) {
+    console.error('Serial alignment error:', err);
+  }
+}
+
+leadsRouter.post('/realign-serials', async (_req: AuthRequest, res: Response) => {
+  await alignSerialNumbers();
+  res.json({ success: true, message: 'Serial numbers re-aligned to 1..N' });
 });
 
 // GET /api/leads/:id
