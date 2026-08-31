@@ -1,5 +1,6 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import api from './lib/api';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import Layout from './components/layout/Layout';
@@ -35,6 +36,20 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 function AppRoutes() {
   const { user } = useAuth();
   useKeyboardShortcuts();
+
+  // Keep Render server awake while user is active on the CRM
+  useEffect(() => {
+    // Ping immediately on mount to wake up server
+    api.get('/health').catch(() => {});
+
+    // Ping every 4 minutes (Render free tier sleeps after 15 min of inactivity)
+    const interval = setInterval(() => {
+      api.get('/health').catch(() => {});
+    }, 4 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <Routes>
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage />} />

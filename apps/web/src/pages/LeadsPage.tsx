@@ -38,8 +38,22 @@ type ViewMode = 'kanban' | 'list';
 export default function LeadsPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [leads, setLeads] = useState<Lead[]>(() => {
+    try {
+      const cached = localStorage.getItem('dnd_cached_leads');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [loading, setLoading] = useState(() => {
+    try {
+      const cached = localStorage.getItem('dnd_cached_leads');
+      return !cached || JSON.parse(cached).length === 0;
+    } catch {
+      return true;
+    }
+  });
   const [view, setView] = useState<ViewMode>('kanban');
   const [showCreate, setShowCreate] = useState(false);
   const [filterStage, setFilterStage] = useState<string>('');
@@ -53,12 +67,20 @@ export default function LeadsPage() {
     if (filterPriority) params.set('priority', filterPriority);
     if (filterOwner === 'ME' && user) params.set('ownerId', user.id);
     params.set('limit', '1000');
-    const { data } = await api.get(`/leads?${params}`);
-    const sorted = (data.data || []).sort((a: Lead, b: Lead) =>
-      (a.serialNo || 0) - (b.serialNo || 0)
-    );
-    setLeads(sorted);
-    setLoading(false);
+    try {
+      const { data } = await api.get(`/leads?${params}`);
+      const sorted = (data.data || []).sort((a: Lead, b: Lead) =>
+        (a.serialNo || 0) - (b.serialNo || 0)
+      );
+      setLeads(sorted);
+      if (!filterStage && !filterPriority && filterOwner === 'ALL') {
+        localStorage.setItem('dnd_cached_leads', JSON.stringify(sorted));
+      }
+    } catch (err) {
+      console.error('Failed to load leads:', err);
+    } finally {
+      setLoading(false);
+    }
   }, [filterStage, filterPriority, filterOwner, user]);
 
   useEffect(() => { fetchLeads(); }, [fetchLeads]);
@@ -70,8 +92,16 @@ export default function LeadsPage() {
   const pipelineValue = activeLeads.reduce((a, l) => a + l.budgetLakhs, 0);
 
   if (loading) return (
-    <div className="loader-center">
-      <div className="spinner" style={{ width: 36, height: 36 }} />
+    <div className="loader-center" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, paddingTop: 100 }}>
+      <div className="spinner" style={{ width: 42, height: 42 }} />
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--text-primary)', marginBottom: 6 }}>
+          ⚡ Connecting to DND Studio Server...
+        </div>
+        <div style={{ fontSize: 13, color: 'var(--text-muted)', maxWidth: 360, lineHeight: 1.5 }}>
+          If the server was idle, Render free tier takes ~20–30 seconds to wake up. Please wait a moment.
+        </div>
+      </div>
     </div>
   );
 
