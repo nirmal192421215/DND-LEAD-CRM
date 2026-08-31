@@ -28,15 +28,56 @@ export default function GlobalSearch() {
   const navigate = useNavigate();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-
   const search = useCallback(async (q: string) => {
-    if (!q.trim()) { setResults([]); setLoading(false); return; }
+    const term = q.trim().toLowerCase();
+    if (!term) { setResults([]); setLoading(false); return; }
+
+    const numericOnly = term.replace(/\D/g, '');
+    const parsedNum = numericOnly ? parseInt(numericOnly, 10) : null;
+
+    // 1. Instant local search from cache for 0ms response
+    let localMatches: SearchResult[] = [];
+    try {
+      const cached = localStorage.getItem('dnd_cached_leads');
+      if (cached) {
+        const allLeads: any[] = JSON.parse(cached);
+        localMatches = allLeads.filter((l) => {
+          const nameMatch = l.name?.toLowerCase().includes(term);
+          const typeMatch = l.projectType?.toLowerCase().includes(term);
+          const locMatch = l.location?.toLowerCase().includes(term);
+          const phoneMatch = l.phone?.includes(term);
+          const serialMatch = (
+            (parsedNum !== null && l.serialNo === parsedNum) ||
+            `dnd-${l.serialNo?.toString().padStart(3, '0')}`.includes(term) ||
+            l.serialNo?.toString().padStart(3, '0').includes(term) ||
+            l.serialNo?.toString() === term ||
+            l.id?.toLowerCase().includes(term)
+          );
+          return nameMatch || typeMatch || locMatch || phoneMatch || serialMatch;
+        }).slice(0, 10);
+      }
+    } catch {
+      // Ignore cache parse error
+    }
+
+    if (localMatches.length > 0) {
+      setResults(localMatches);
+    }
+
+    // 2. Fetch fresh results from backend API
     setLoading(true);
     try {
       const { data } = await api.get(`/search?q=${encodeURIComponent(q)}&limit=10`);
-      setResults(data.data?.leads ?? []);
-    } catch { setResults([]); }
-    finally { setLoading(false); }
+      if (data.data?.leads && data.data.leads.length > 0) {
+        setResults(data.data.leads);
+      } else if (localMatches.length === 0) {
+        setResults([]);
+      }
+    } catch {
+      // Keep local matches if available
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
