@@ -40,7 +40,7 @@ export default function LeadsPage() {
   const { toast } = useToast();
   const [leads, setLeads] = useState<Lead[]>(() => {
     try {
-      const cached = localStorage.getItem('dnd_cached_leads');
+      const cached = localStorage.getItem('dnd_cached_leads_v2');
       return cached ? JSON.parse(cached) : [];
     } catch {
       return [];
@@ -48,7 +48,7 @@ export default function LeadsPage() {
   });
   const [loading, setLoading] = useState(() => {
     try {
-      const cached = localStorage.getItem('dnd_cached_leads');
+      const cached = localStorage.getItem('dnd_cached_leads_v2');
       return !cached || JSON.parse(cached).length === 0;
     } catch {
       return true;
@@ -74,7 +74,7 @@ export default function LeadsPage() {
       );
       setLeads(sorted);
       if (!filterStage && !filterPriority && filterOwner === 'ALL') {
-        localStorage.setItem('dnd_cached_leads', JSON.stringify(sorted));
+        localStorage.setItem('dnd_cached_leads_v2', JSON.stringify(sorted));
       }
     } catch (err) {
       console.error('Failed to load leads:', err);
@@ -133,6 +133,21 @@ export default function LeadsPage() {
               ≡ List
             </button>
           </div>
+          {/* Refresh Leads */}
+          <button
+            className="btn btn-secondary btn-sm"
+            onClick={() => {
+              setLoading(true);
+              fetchLeads().then(() => toast('Leads refreshed from cloud! 🔄', 'success'));
+            }}
+            title="Refresh Leads from Cloud"
+            style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+            </svg>
+            Refresh
+          </button>
           {/* CSV Export */}
           <button
             className="btn btn-secondary btn-sm"
