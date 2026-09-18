@@ -56,6 +56,7 @@ export default function LeadsPage() {
   });
   const [view, setView] = useState<ViewMode>('kanban');
   const [showCreate, setShowCreate] = useState(false);
+  const [filterCategory, setFilterCategory] = useState<'ALL' | 'RESTAURANT' | 'CONSTRUCTION' | 'INFRA'>('ALL');
   const [filterStage, setFilterStage] = useState<string>('');
   const [filterPriority, setFilterPriority] = useState<string>('');
   const [filterOwner, setFilterOwner] = useState<string>('ALL');
@@ -88,7 +89,37 @@ export default function LeadsPage() {
   const PRIORITY_FILTERS = ['HOT', 'WARM', 'COLD'];
   const STAGE_FILTERS = ['NEW', 'CONTACTED', 'CALL_BACK', 'MEETING', 'PROPOSAL', 'NEGOTIATION'];
 
-  const activeLeads = leads.filter((l) => !['WON', 'LOST'].includes(l.stage));
+  const getCategoryOfLead = (lead: Lead): 'RESTAURANT' | 'CONSTRUCTION' | 'INFRA' => {
+    const text = `${lead.projectType || ''} ${lead.projectDescription || ''} ${lead.name || ''} ${lead.tags || ''}`.toLowerCase();
+    if (text.includes('sand') || text.includes('infra') || text.includes('rental') || text.includes('material') || text.includes('machine') || text.includes('wholesale')) {
+      return 'INFRA';
+    }
+    if (text.includes('construction') || text.includes('builder') || text.includes('architecture') || text.includes('renovation') || text.includes('interior')) {
+      return 'CONSTRUCTION';
+    }
+    return 'RESTAURANT';
+  };
+
+  const CATEGORY_TABS = [
+    { key: 'ALL' as const, label: 'All', icon: '🏢' },
+    { key: 'RESTAURANT' as const, label: 'Restaurants & Food', icon: '🍽️' },
+    { key: 'CONSTRUCTION' as const, label: 'Construction', icon: '🏗️' },
+    { key: 'INFRA' as const, label: 'Infra & Materials', icon: '⚙️' },
+  ];
+
+  const categoryCounts = {
+    ALL: leads.length,
+    RESTAURANT: leads.filter((l) => getCategoryOfLead(l) === 'RESTAURANT').length,
+    CONSTRUCTION: leads.filter((l) => getCategoryOfLead(l) === 'CONSTRUCTION').length,
+    INFRA: leads.filter((l) => getCategoryOfLead(l) === 'INFRA').length,
+  };
+
+  const displayedLeads = leads.filter((l) => {
+    if (filterCategory === 'ALL') return true;
+    return getCategoryOfLead(l) === filterCategory;
+  });
+
+  const activeLeads = displayedLeads.filter((l) => !['WON', 'LOST'].includes(l.stage));
   const pipelineValue = activeLeads.reduce((a, l) => a + l.budgetLakhs, 0);
 
   if (loading) return (
@@ -112,7 +143,7 @@ export default function LeadsPage() {
         <div className="page-header-left">
           <div className="page-title">Leads Pipeline</div>
           <div className="page-desc">
-            {leads.length} leads · Active pipeline: {formatBudget(pipelineValue)}
+            {displayedLeads.length} leads {filterCategory !== 'ALL' ? `(${CATEGORY_TABS.find(t => t.key === filterCategory)?.label})` : ''} · Active pipeline: {formatBudget(pipelineValue)}
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -151,7 +182,7 @@ export default function LeadsPage() {
           {/* CSV Export */}
           <button
             className="btn btn-secondary btn-sm"
-            onClick={() => { exportToCSV(leads); toast('CSV exported! 📊', 'success'); }}
+            onClick={() => { exportToCSV(displayedLeads); toast('CSV exported! 📊', 'success'); }}
             title="Export to CSV"
             style={{ display: 'flex', alignItems: 'center', gap: 6 }}
           >
@@ -164,6 +195,73 @@ export default function LeadsPage() {
             + New Lead
           </button>
         </div>
+      </div>
+
+      {/* ── Industry Category Tabs ── */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        marginBottom: 12,
+        padding: '6px 8px',
+        background: 'var(--bg-elevated)',
+        borderRadius: 12,
+        border: '1px solid var(--border)',
+        overflowX: 'auto',
+      }}>
+        <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 700, paddingLeft: 6, whiteSpace: 'nowrap' }}>
+          Industry:
+        </span>
+        {CATEGORY_TABS.map((cat) => {
+          const isActive = filterCategory === cat.key;
+          const count = categoryCounts[cat.key];
+          return (
+            <button
+              key={cat.key}
+              onClick={() => setFilterCategory(cat.key)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '6px 14px',
+                borderRadius: 8,
+                fontSize: 13,
+                fontWeight: isActive ? 700 : 500,
+                border: isActive ? '1px solid var(--brand)' : '1px solid transparent',
+                background: isActive ? 'var(--brand-dim)' : 'transparent',
+                color: isActive ? 'var(--brand-light)' : 'var(--text-secondary)',
+                cursor: 'pointer',
+                transition: 'all 150ms ease',
+                whiteSpace: 'nowrap',
+              }}
+              onMouseEnter={(e) => {
+                if (!isActive) {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                  e.currentTarget.style.color = 'var(--text-primary)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isActive) {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.color = 'var(--text-secondary)';
+                }
+              }}
+            >
+              <span>{cat.icon}</span>
+              <span>{cat.label}</span>
+              <span style={{
+                fontSize: 11,
+                padding: '1px 6px',
+                borderRadius: 10,
+                background: isActive ? 'var(--brand)' : 'var(--bg-surface)',
+                color: isActive ? '#fff' : 'var(--text-muted)',
+                fontWeight: 700,
+              }}>
+                {count}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* ── Filters ── */}
@@ -201,10 +299,10 @@ export default function LeadsPage() {
           </button>
         ))}
 
-        {(filterStage || filterPriority || filterOwner === 'ME') && (
+        {(filterStage || filterPriority || filterOwner === 'ME' || filterCategory !== 'ALL') && (
           <button
             className="btn btn-ghost btn-sm"
-            onClick={() => { setFilterStage(''); setFilterPriority(''); setFilterOwner('ALL'); }}
+            onClick={() => { setFilterStage(''); setFilterPriority(''); setFilterOwner('ALL'); setFilterCategory('ALL'); }}
           >
             ✕ Clear
           </button>
@@ -220,7 +318,7 @@ export default function LeadsPage() {
 
       {/* ── Kanban View ── */}
       {view === 'kanban' && (
-        <KanbanBoard leads={leads} onLeadMoved={fetchLeads} />
+        <KanbanBoard leads={displayedLeads} onLeadMoved={fetchLeads} />
       )}
 
       {/* ── List View ── */}
@@ -242,13 +340,13 @@ export default function LeadsPage() {
               </tr>
             </thead>
             <tbody>
-              {leads.length === 0 ? (
+              {displayedLeads.length === 0 ? (
                 <tr>
                   <td colSpan={10} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
-                    No leads found
+                    No leads found in this category
                   </td>
                 </tr>
-              ) : leads.map((lead) => (
+              ) : displayedLeads.map((lead) => (
                 <tr key={lead.id} onClick={() => navigate(`/leads/${lead.id}`)}>
                   <td>
                     <span style={{
