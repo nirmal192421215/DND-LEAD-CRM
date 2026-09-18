@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Lead } from '@bind-build/shared';
-import { formatBudget, stageLabel, STAGE_ORDER, SOURCE_ICONS } from '../../lib/utils';
+import { formatBudget, stageLabel, STAGE_ORDER, SOURCE_ICONS, cleanPhone, cleanWhatsAppPhone, format10DigitPhone } from '../../lib/utils';
 import api from '../../lib/api';
 import { useToast } from '../../context/ToastContext';
 import LiveCallDialerModal from './LiveCallDialerModal';
@@ -21,11 +21,6 @@ const STAGE_COLORS: Record<string, string> = {
   WON: '#10d9a0',
   LOST: '#ff5f7e',
 };
-
-function cleanPhone(phone?: string) {
-  if (!phone) return '';
-  return phone.replace(/\D/g, '');
-}
 
 export default function KanbanBoard({ leads, onLeadMoved }: Props) {
   const navigate = useNavigate();
@@ -375,7 +370,7 @@ export default function KanbanBoard({ leads, onLeadMoved }: Props) {
                           sessionStorage.setItem('active_call_lead_name', lead.name);
                           window.location.href = `tel:${cleanPhone(lead.phone)}`;
                         }}
-                        title={lead.phone ? `Direct Call ${lead.name} (${lead.phone})` : 'No phone number'}
+                        title={lead.phone ? `Direct Call ${lead.name} (${format10DigitPhone(lead.phone)})` : 'No phone number'}
                         style={{
                           display: 'inline-flex',
                           alignItems: 'center',
@@ -407,7 +402,7 @@ export default function KanbanBoard({ leads, onLeadMoved }: Props) {
 
                       {/* WhatsApp Icon */}
                       <a
-                        href={lead.phone ? `https://wa.me/${cleanPhone(lead.phone)}?text=${encodeURIComponent(`Hi ${lead.name}, reaching out from DND Studio regarding web & mobile app solutions.`)}` : '#'}
+                        href={lead.phone ? `https://wa.me/${cleanWhatsAppPhone(lead.phone)}?text=${encodeURIComponent(`Hi ${lead.name}, reaching out from DND Studio regarding web & mobile app solutions.`)}` : '#'}
                         target="_blank"
                         rel="noopener noreferrer"
                         title={lead.phone ? `WhatsApp ${lead.name}` : 'No phone number'}

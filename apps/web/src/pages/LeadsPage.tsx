@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import type { Lead } from '@bind-build/shared';
-import { formatBudget, stageLabel, SOURCE_ICONS } from '../lib/utils';
+import { formatBudget, stageLabel, SOURCE_ICONS, cleanPhone, cleanWhatsAppPhone, format10DigitPhone } from '../lib/utils';
 import KanbanBoard from '../components/leads/KanbanBoard';
 import CreateLeadModal from '../components/leads/CreateLeadModal';
 import { useToast } from '../context/ToastContext';
@@ -40,7 +40,7 @@ export default function LeadsPage() {
   const { toast } = useToast();
   const [leads, setLeads] = useState<Lead[]>(() => {
     try {
-      const cached = localStorage.getItem('dnd_cached_leads_v2');
+      const cached = localStorage.getItem('dnd_cached_leads_v3');
       return cached ? JSON.parse(cached) : [];
     } catch {
       return [];
@@ -48,7 +48,7 @@ export default function LeadsPage() {
   });
   const [loading, setLoading] = useState(() => {
     try {
-      const cached = localStorage.getItem('dnd_cached_leads_v2');
+      const cached = localStorage.getItem('dnd_cached_leads_v3');
       return !cached || JSON.parse(cached).length === 0;
     } catch {
       return true;
@@ -74,7 +74,7 @@ export default function LeadsPage() {
       );
       setLeads(sorted);
       if (!filterStage && !filterPriority && filterOwner === 'ALL') {
-        localStorage.setItem('dnd_cached_leads_v2', JSON.stringify(sorted));
+        localStorage.setItem('dnd_cached_leads_v3', JSON.stringify(sorted));
       }
     } catch (err) {
       console.error('Failed to load leads:', err);
@@ -302,8 +302,8 @@ export default function LeadsPage() {
                   <td onClick={(e) => e.stopPropagation()}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                       <a
-                        href={lead.phone ? `tel:${lead.phone}` : '#'}
-                        title={lead.phone ? `Call ${lead.name} (${lead.phone})` : 'No phone'}
+                        href={lead.phone ? `tel:${cleanPhone(lead.phone)}` : '#'}
+                        title={lead.phone ? `Call ${lead.name} (${format10DigitPhone(lead.phone)})` : 'No phone'}
                         style={{ color: 'var(--text-muted)', padding: 4, borderRadius: 4, transition: 'color 150ms' }}
                         onMouseEnter={(e) => (e.currentTarget.style.color = '#38bdf8')}
                         onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
@@ -313,7 +313,7 @@ export default function LeadsPage() {
                         </svg>
                       </a>
                       <a
-                        href={lead.phone ? `https://wa.me/${lead.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Hi ${lead.name}, reaching out regarding your ${lead.projectType} project.`)}` : '#'}
+                        href={lead.phone ? `https://wa.me/${cleanWhatsAppPhone(lead.phone)}?text=${encodeURIComponent(`Hi ${lead.name}, reaching out regarding your ${lead.projectType} project.`)}` : '#'}
                         target="_blank"
                         rel="noopener noreferrer"
                         title={lead.phone ? `WhatsApp ${lead.name}` : 'No phone'}

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import type { Lead } from '@bind-build/shared';
 import api from '../../lib/api';
 import { useToast } from '../../context/ToastContext';
+import { cleanWhatsAppPhone } from '../../lib/utils';
 
 interface Props {
   lead: Lead;
@@ -326,7 +327,7 @@ export default function AISalesCopilot({ lead, onStartCallWithScript }: Props) {
                 </button>
                 {lead.phone ? (
                   <a
-                    href={`https://wa.me/${cleanPhone(lead.phone)}?text=${encodeURIComponent(pitch.whatsappMessage)}`}
+                    href={`https://wa.me/${cleanWhatsAppPhone(lead.phone)}?text=${encodeURIComponent(pitch.whatsappMessage)}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="btn btn-primary"

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import type { Lead } from '@bind-build/shared';
 import api from '../../lib/api';
 import { useToast } from '../../context/ToastContext';
+import { cleanPhone, format10DigitPhone } from '../../lib/utils';
 
 interface Props {
   lead: Lead;
@@ -177,7 +178,7 @@ export default function LiveCallDialerModal({ lead, onClose, onCallLogged }: Pro
               {lead.name}
             </div>
             <div style={{ fontSize: 14, fontWeight: 600, color: '#38bdf8', marginTop: 2 }}>
-              {lead.phone || 'No phone number'}
+              {format10DigitPhone(lead.phone) || 'No phone number'}
             </div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
               📍 {lead.location} · {lead.projectType}
@@ -188,7 +189,7 @@ export default function LiveCallDialerModal({ lead, onClose, onCallLogged }: Pro
           {callStatus === 'READY' ? (
             <div style={{ textAlign: 'center', marginTop: 24, marginBottom: 24 }}>
               <a
-                href={`tel:${lead.phone}`}
+                href={`tel:${cleanPhone(lead.phone)}`}
                 onClick={() => setCallStatus('IN_CALL')}
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: 10,

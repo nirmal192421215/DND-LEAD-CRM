@@ -49,3 +49,34 @@ export const SOURCE_ICONS: Record<string, string> = {
   Direct: '📞',
   WalkIn: '🚶',
 };
+
+/**
+ * Returns a clean 10-digit phone number without 91, +91, 0, spaces or symbols
+ */
+export function cleanPhone(phone?: string | null): string {
+  if (!phone) return '';
+  const digits = phone.replace(/\D/g, '');
+  if (digits.length === 12 && digits.startsWith('91')) return digits.slice(2);
+  if (digits.length === 11 && digits.startsWith('0')) return digits.slice(1);
+  if (digits.length > 10) return digits.slice(-10);
+  return digits;
+}
+
+/**
+ * Returns a 10-digit phone formatted for display, e.g. "93609 31010"
+ */
+export function format10DigitPhone(phone?: string | null): string {
+  const p = cleanPhone(phone);
+  if (p.length === 10) {
+    return `${p.slice(0, 5)} ${p.slice(5)}`;
+  }
+  return p || phone || '';
+}
+
+/**
+ * Returns country code + 10 digits for WhatsApp wa.me links
+ */
+export function cleanWhatsAppPhone(phone?: string | null): string {
+  const tenDigit = cleanPhone(phone);
+  return tenDigit ? `91${tenDigit}` : '';
+}

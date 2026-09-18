@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import type { Lead, Activity, Note, Meeting } from '@bind-build/shared';
-import { formatBudget, stageLabel, timeAgo, formatDate, SOURCE_ICONS } from '../lib/utils';
+import { formatBudget, stageLabel, timeAgo, formatDate, SOURCE_ICONS, cleanPhone, cleanWhatsAppPhone, format10DigitPhone } from '../lib/utils';
 import { useToast } from '../context/ToastContext';
 import CreateMeetingModal from '../components/leads/CreateMeetingModal';
 import LiveCallDialerModal from '../components/leads/LiveCallDialerModal';
@@ -50,11 +50,6 @@ const STEPPER_STAGES = [
   { key: 'NEGOTIATION', label: 'Negotiation', stepNum: 6 },
   { key: 'WON', label: 'Won 🎉', stepNum: 7 },
 ];
-
-function cleanPhone(phone?: string) {
-  if (!phone) return '';
-  return phone.replace(/\D/g, '');
-}
 
 export default function LeadDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -450,7 +445,7 @@ export default function LeadDetailPage() {
 
               {/* WhatsApp button */}
               <a
-                href={lead.phone ? `https://wa.me/${cleanPhone(lead.phone)}?text=${encodeURIComponent(`Hi ${lead.name}, reaching out from DND Studio regarding custom website and mobile app solutions.`)}` : '#'}
+                href={lead.phone ? `https://wa.me/${cleanWhatsAppPhone(lead.phone)}?text=${encodeURIComponent(`Hi ${lead.name}, reaching out from DND Studio regarding custom website and mobile app solutions.`)}` : '#'}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn btn-secondary btn-sm"
@@ -1432,7 +1427,7 @@ export default function LeadDetailPage() {
                 <div style={{ padding: '10px 14px', background: 'rgba(37,211,102,0.08)', borderRadius: 8, border: '1px solid rgba(37,211,102,0.25)' }}>
                   <div style={{ fontSize: 12, fontWeight: 600, color: '#25D366', marginBottom: 4 }}>💬 WhatsApp Invitation to Client:</div>
                   <a
-                    href={`https://wa.me/${cleanPhone(lead.phone)}?text=${encodeURIComponent(`Hi ${lead.name}, confirming our Google Meet demo on ${meetTime ? new Date(meetTime).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'our scheduled time'}.\nGoogle Meet Link: ${meetUrl || 'https://meet.google.com/new'}\n\nLooking forward to speaking with you! — Nirmal, DND Studio`)}`}
+                    href={`https://wa.me/${cleanWhatsAppPhone(lead.phone)}?text=${encodeURIComponent(`Hi ${lead.name}, confirming our Google Meet demo on ${meetTime ? new Date(meetTime).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'our scheduled time'}.\nGoogle Meet Link: ${meetUrl || 'https://meet.google.com/new'}\n\nLooking forward to speaking with you! — Nirmal, DND Studio`)}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="btn btn-secondary btn-sm"
