@@ -3,6 +3,7 @@ import api from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { timeAgo } from '../lib/utils';
+import CreativeLoader from '../components/common/CreativeLoader';
 
 interface TeamMember {
   id: string;
@@ -77,7 +78,7 @@ export default function TeamPage() {
     } catch { toast('Failed to update role', 'error'); }
   };
 
-  if (loading) return <div className="loader-center"><div className="spinner" style={{ width: 36, height: 36 }} /></div>;
+  if (loading) return <CreativeLoader />;
 
   return (
     <div style={{ maxWidth: 740, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 20 }}>

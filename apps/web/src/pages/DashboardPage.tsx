@@ -4,6 +4,7 @@ import api from '../lib/api';
 import type { Lead, AnalyticsOverview } from '@bind-build/shared';
 import { formatBudget, stageLabel } from '../lib/utils';
 import { useAuth } from '../context/AuthContext';
+import CreativeLoader from '../components/common/CreativeLoader';
 
 // ── Mini SVG Bar Chart ────────────────────────────────────────────────────────
 function BarChart({ data }: { data: { label: string; value: number; color?: string }[] }) {
@@ -97,7 +98,7 @@ export default function DashboardPage() {
     }).finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="loader-center"><div className="spinner" style={{ width: 36, height: 36 }} /></div>;
+  if (loading) return <CreativeLoader />;
 
   const kpis = [
     {

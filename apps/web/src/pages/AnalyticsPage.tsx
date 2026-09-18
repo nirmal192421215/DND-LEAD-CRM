@@ -4,6 +4,7 @@ import {
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell,
 } from 'recharts';
 import api from '../lib/api';
+import CreativeLoader from '../components/common/CreativeLoader';
 
 /* ─── Types ──────────────────────────────────────────────────── */
 interface Overview {
@@ -87,9 +88,7 @@ export default function AnalyticsPage() {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  if (loading) return (
-    <div className="loader-center"><div className="spinner" style={{ width: 36, height: 36 }} /></div>
-  );
+  if (loading) return <CreativeLoader />;
   if (!overview) return null;
 
   const funnelOrdered = STAGE_ORDER.map((s) => overview.funnel.find((f) => f.stage === s) ?? { stage: s, count: 0, valueLakhs: 0 });

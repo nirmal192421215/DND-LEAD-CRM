@@ -9,6 +9,7 @@ import LiveCallDialerModal from '../components/leads/LiveCallDialerModal';
 import ProposalPanel from '../components/leads/ProposalPanel';
 import FilesPanel from '../components/leads/FilesPanel';
 import AISalesCopilot from '../components/leads/AISalesCopilot';
+import CreativeLoader from '../components/common/CreativeLoader';
 
 type FileAsset = {
   id: string;
@@ -317,13 +318,7 @@ export default function LeadDetailPage() {
     fetchLead();
   };
 
-  if (loading) {
-    return (
-      <div className="loader-center" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
-        <div className="spinner" style={{ width: 36, height: 36 }} />
-      </div>
-    );
-  }
+  if (loading) return <CreativeLoader />;
 
   if (!lead) {
     return (

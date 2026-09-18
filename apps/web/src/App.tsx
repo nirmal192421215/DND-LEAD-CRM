@@ -15,21 +15,15 @@ const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const TeamPage = lazy(() => import('./pages/TeamPage'));
 
+import CreativeLoader from './components/common/CreativeLoader';
+
 function PageLoader() {
-  return (
-    <div className="flex-center" style={{ height: '60vh', width: '100%' }}>
-      <div className="spinner" style={{ width: 32, height: 32 }} />
-    </div>
-  );
+  return <CreativeLoader />;
 }
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  if (loading) return (
-    <div className="flex-center" style={{ height: '100vh' }}>
-      <div className="spinner" style={{ width: 36, height: 36 }} />
-    </div>
-  );
+  if (loading) return <CreativeLoader fullScreen />;
   return user ? <>{children}</> : <Navigate to="/login" replace />;
 }
 

@@ -7,6 +7,7 @@ import KanbanBoard from '../components/leads/KanbanBoard';
 import CreateLeadModal from '../components/leads/CreateLeadModal';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
+import CreativeLoader from '../components/common/CreativeLoader';
 
 function exportToCSV(leads: Lead[]) {
   const headers = ['Name','Project Type','Location','Budget (L)','Stage','Priority','Source','Win %','Phone','Email','Created'];
@@ -122,19 +123,7 @@ export default function LeadsPage() {
   const activeLeads = displayedLeads.filter((l) => !['WON', 'LOST'].includes(l.stage));
   const pipelineValue = activeLeads.reduce((a, l) => a + l.budgetLakhs, 0);
 
-  if (loading) return (
-    <div className="loader-center" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, paddingTop: 100 }}>
-      <div className="spinner" style={{ width: 42, height: 42 }} />
-      <div style={{ textAlign: 'center' }}>
-        <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--text-primary)', marginBottom: 6 }}>
-          ⚡ Connecting to DND Studio Server...
-        </div>
-        <div style={{ fontSize: 13, color: 'var(--text-muted)', maxWidth: 360, lineHeight: 1.5 }}>
-          If the server was idle, Render free tier takes ~20–30 seconds to wake up. Please wait a moment.
-        </div>
-      </div>
-    </div>
-  );
+  if (loading) return <CreativeLoader />;
 
   return (
     <div>
