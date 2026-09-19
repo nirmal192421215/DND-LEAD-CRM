@@ -41,7 +41,7 @@ export default function LeadsPage() {
   const { toast } = useToast();
   const [leads, setLeads] = useState<Lead[]>(() => {
     try {
-      const cached = localStorage.getItem('dnd_cached_leads_v3');
+      const cached = localStorage.getItem('dnd_cached_leads_v4');
       return cached ? JSON.parse(cached) : [];
     } catch {
       return [];
@@ -49,7 +49,7 @@ export default function LeadsPage() {
   });
   const [loading, setLoading] = useState(() => {
     try {
-      const cached = localStorage.getItem('dnd_cached_leads_v3');
+      const cached = localStorage.getItem('dnd_cached_leads_v4');
       return !cached || JSON.parse(cached).length === 0;
     } catch {
       return true;
@@ -57,7 +57,7 @@ export default function LeadsPage() {
   });
   const [view, setView] = useState<ViewMode>('kanban');
   const [showCreate, setShowCreate] = useState(false);
-  const [filterCategory, setFilterCategory] = useState<'ALL' | 'RESTAURANT' | 'CONSTRUCTION' | 'INFRA'>('ALL');
+  const [filterCategory, setFilterCategory] = useState<'ALL' | 'INTERIOR' | 'RESTAURANT' | 'CONSTRUCTION' | 'INFRA'>('ALL');
   const [filterStage, setFilterStage] = useState<string>('');
   const [filterPriority, setFilterPriority] = useState<string>('');
   const [filterOwner, setFilterOwner] = useState<string>('ALL');
@@ -76,7 +76,7 @@ export default function LeadsPage() {
       );
       setLeads(sorted);
       if (!filterStage && !filterPriority && filterOwner === 'ALL') {
-        localStorage.setItem('dnd_cached_leads_v3', JSON.stringify(sorted));
+        localStorage.setItem('dnd_cached_leads_v4', JSON.stringify(sorted));
       }
     } catch (err) {
       console.error('Failed to load leads:', err);
@@ -90,12 +90,15 @@ export default function LeadsPage() {
   const PRIORITY_FILTERS = ['HOT', 'WARM', 'COLD'];
   const STAGE_FILTERS = ['NEW', 'CONTACTED', 'CALL_BACK', 'MEETING', 'PROPOSAL', 'NEGOTIATION'];
 
-  const getCategoryOfLead = (lead: Lead): 'RESTAURANT' | 'CONSTRUCTION' | 'INFRA' => {
+  const getCategoryOfLead = (lead: Lead): 'INTERIOR' | 'RESTAURANT' | 'CONSTRUCTION' | 'INFRA' => {
     const text = `${lead.projectType || ''} ${lead.projectDescription || ''} ${lead.name || ''} ${lead.tags || ''}`.toLowerCase();
     if (text.includes('sand') || text.includes('infra') || text.includes('rental') || text.includes('material') || text.includes('machine') || text.includes('wholesale')) {
       return 'INFRA';
     }
-    if (text.includes('construction') || text.includes('builder') || text.includes('architecture') || text.includes('renovation') || text.includes('interior')) {
+    if (text.includes('interior') || text.includes('decor') || text.includes('wood') || text.includes('plywood') || text.includes('ceiling') || text.includes('modular')) {
+      return 'INTERIOR';
+    }
+    if (text.includes('construction') || text.includes('builder') || text.includes('architecture') || text.includes('renovation') || text.includes('building')) {
       return 'CONSTRUCTION';
     }
     return 'RESTAURANT';
@@ -103,6 +106,7 @@ export default function LeadsPage() {
 
   const CATEGORY_TABS = [
     { key: 'ALL' as const, label: 'All', icon: '🏢' },
+    { key: 'INTERIOR' as const, label: 'Interiors & Decor', icon: '🎨' },
     { key: 'RESTAURANT' as const, label: 'Restaurants & Food', icon: '🍽️' },
     { key: 'CONSTRUCTION' as const, label: 'Construction', icon: '🏗️' },
     { key: 'INFRA' as const, label: 'Infra & Materials', icon: '⚙️' },
@@ -110,6 +114,7 @@ export default function LeadsPage() {
 
   const categoryCounts = {
     ALL: leads.length,
+    INTERIOR: leads.filter((l) => getCategoryOfLead(l) === 'INTERIOR').length,
     RESTAURANT: leads.filter((l) => getCategoryOfLead(l) === 'RESTAURANT').length,
     CONSTRUCTION: leads.filter((l) => getCategoryOfLead(l) === 'CONSTRUCTION').length,
     INFRA: leads.filter((l) => getCategoryOfLead(l) === 'INFRA').length,
