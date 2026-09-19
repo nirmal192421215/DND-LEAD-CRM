@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import type { Lead } from '@bind-build/shared';
-import { formatBudget, stageLabel, SOURCE_ICONS, cleanPhone, cleanWhatsAppPhone, format10DigitPhone } from '../lib/utils';
+import { formatBudget, stageLabel, SOURCE_ICONS, cleanPhone, cleanWhatsAppPhone, format10DigitPhone, downloadLeadVCard } from '../lib/utils';
 import KanbanBoard from '../components/leads/KanbanBoard';
 import CreateLeadModal from '../components/leads/CreateLeadModal';
 import { useToast } from '../context/ToastContext';
@@ -432,6 +432,30 @@ export default function LeadsPage() {
                           <polyline points="22,6 12,13 2,6" />
                         </svg>
                       </a>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          downloadLeadVCard(lead);
+                          toast(`Saved contact DND-${lead.serialNo?.toString().padStart(3, '0') ?? ''} ${lead.name} to mobile contacts! 📇`, 'success');
+                        }}
+                        title={`Save DND-${lead.serialNo?.toString().padStart(3, '0') ?? ''} ${lead.name} to Phone Contacts`}
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          color: 'var(--text-muted)',
+                          padding: 4,
+                          borderRadius: 4,
+                          cursor: 'pointer',
+                          transition: 'all 150ms',
+                          fontSize: 13,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.color = '#10d9a0')}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
+                      >
+                        📇
+                      </button>
                     </div>
                   </td>
                 </tr>

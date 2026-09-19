@@ -80,3 +80,51 @@ export function cleanWhatsAppPhone(phone?: string | null): string {
   const tenDigit = cleanPhone(phone);
   return tenDigit ? `91${tenDigit}` : '';
 }
+
+/**
+ * Generates and triggers downloading a standard vCard (.vcf)
+ * When clicked on mobile (iOS/Android), opens native "Add to Contacts" screen
+ * with Serial Number + Company Name pre-filled.
+ */
+export function downloadLeadVCard(lead: {
+  name: string;
+  serialNo?: number | null;
+  phone?: string | null;
+  email?: string | null;
+  location?: string | null;
+  projectType?: string | null;
+  budgetLakhs?: number | null;
+}) {
+  const serial = lead.serialNo ? `DND-${String(lead.serialNo).padStart(3, '0')}` : 'DND';
+  const fullName = `${serial} ${lead.name}`;
+  const phone = cleanPhone(lead.phone);
+  const email = lead.email || '';
+  const address = (lead.location || '').replace(/[\r\n]+/g, ', ');
+  const note = `Lead ID: ${serial}\nCompany: ${lead.name}\nProject: ${lead.projectType || 'General'}\nLocation: ${address}${lead.budgetLakhs ? `\nBudget: ₹${lead.budgetLakhs}L` : ''}`;
+
+  const vcard = [
+    'BEGIN:VCARD',
+    'VERSION:3.0',
+    `FN:${fullName}`,
+    `N:${lead.name};${serial};;;`,
+    `ORG:${lead.name};DND CRM`,
+    `TITLE:${lead.projectType || 'Client Lead'}`,
+    phone ? `TEL;TYPE=CELL,VOICE:${phone}` : '',
+    email ? `EMAIL;TYPE=WORK,INTERNET:${email}` : '',
+    address ? `ADR;TYPE=WORK:;;${address};;;;` : '',
+    `NOTE:${note.replace(/\n/g, '\\n')}`,
+    'END:VCARD',
+  ].filter(Boolean).join('\r\n');
+
+  const blob = new Blob([vcard], { type: 'text/vcard;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const cleanFileName = `${serial}_${lead.name.replace(/[^a-zA-Z0-9_-]/g, '_')}.vcf`;
+
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', cleanFileName);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}

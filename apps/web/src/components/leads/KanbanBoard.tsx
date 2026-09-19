@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Lead } from '@bind-build/shared';
-import { formatBudget, stageLabel, STAGE_ORDER, SOURCE_ICONS, cleanPhone, cleanWhatsAppPhone, format10DigitPhone } from '../../lib/utils';
+import { formatBudget, stageLabel, STAGE_ORDER, SOURCE_ICONS, cleanPhone, cleanWhatsAppPhone, format10DigitPhone, downloadLeadVCard } from '../../lib/utils';
 import api from '../../lib/api';
 import { useToast } from '../../context/ToastContext';
 import LiveCallDialerModal from './LiveCallDialerModal';
@@ -466,6 +466,43 @@ export default function KanbanBoard({ leads, onLeadMoved }: Props) {
                           <polyline points="22,6 12,13 2,6" />
                         </svg>
                       </a>
+
+                      {/* Save Contact Icon */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          downloadLeadVCard(lead);
+                          toast(`Saved contact DND-${lead.serialNo?.toString().padStart(3, '0') ?? ''} ${lead.name} to mobile contacts! 📇`, 'success');
+                        }}
+                        title={`Save DND-${lead.serialNo?.toString().padStart(3, '0') ?? ''} ${lead.name} to phone contacts`}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: 28,
+                          height: 28,
+                          borderRadius: 8,
+                          background: 'var(--bg-elevated)',
+                          border: '1px solid var(--border)',
+                          color: 'var(--text-secondary)',
+                          cursor: 'pointer',
+                          transition: 'all 150ms',
+                          fontSize: 12,
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.color = '#10d9a0';
+                          e.currentTarget.style.borderColor = '#10d9a0';
+                          e.currentTarget.style.background = 'rgba(16,217,160,0.12)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.color = 'var(--text-secondary)';
+                          e.currentTarget.style.borderColor = 'var(--border)';
+                          e.currentTarget.style.background = 'var(--bg-elevated)';
+                        }}
+                      >
+                        📇
+                      </button>
 
                       {/* Google Maps Icon */}
                       {lead.projectDescription?.includes('http') && (

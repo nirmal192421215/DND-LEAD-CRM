@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import type { Lead, Activity, Note, Meeting } from '@bind-build/shared';
-import { formatBudget, stageLabel, timeAgo, formatDate, SOURCE_ICONS, cleanPhone, cleanWhatsAppPhone, format10DigitPhone } from '../lib/utils';
+import { formatBudget, stageLabel, timeAgo, formatDate, SOURCE_ICONS, cleanPhone, cleanWhatsAppPhone, format10DigitPhone, downloadLeadVCard } from '../lib/utils';
 import { useToast } from '../context/ToastContext';
 import CreateMeetingModal from '../components/leads/CreateMeetingModal';
 import LiveCallDialerModal from '../components/leads/LiveCallDialerModal';
@@ -459,6 +459,32 @@ export default function LeadDetailPage() {
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>
                 Email
               </a>
+
+              {/* Save Contact to Mobile */}
+              <button
+                type="button"
+                onClick={() => {
+                  downloadLeadVCard(lead);
+                  toast(`Saved contact DND-${lead.serialNo?.toString().padStart(3, '0') ?? ''} ${lead.name} to mobile contacts! 📇`, 'success');
+                }}
+                className="btn btn-secondary btn-sm"
+                title={`Save DND-${lead.serialNo?.toString().padStart(3, '0') ?? ''} ${lead.name} to your Phone Contacts`}
+                style={{
+                  borderRadius: 20,
+                  padding: '8px 16px',
+                  gap: 6,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: '#10d9a0',
+                  borderColor: 'rgba(16,217,160,0.4)',
+                  background: 'rgba(16,217,160,0.08)',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                }}
+              >
+                📇 Save Contact
+              </button>
 
               {/* Google Maps button */}
               {lead.projectDescription?.includes('http') && (
@@ -1113,19 +1139,33 @@ export default function LeadDetailPage() {
                 <span style={{ fontSize: 14, color: 'var(--text-muted)', marginTop: 2 }}>📞</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500, marginBottom: 2 }}>Phone</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                     <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
-                      {lead.phone || '—'}
+                      {lead.phone ? format10DigitPhone(lead.phone) : '—'}
                     </span>
                     {lead.phone && (
-                      <button
-                        type="button"
-                        className="btn btn-secondary btn-sm"
-                        onClick={handleInitiatePhoneCall}
-                        style={{ padding: '2px 8px', fontSize: 11, borderRadius: 12, color: '#38bdf8', borderColor: 'rgba(56,189,248,0.4)', cursor: 'pointer' }}
-                      >
-                        ⚡ Dial
-                      </button>
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          onClick={handleInitiatePhoneCall}
+                          style={{ padding: '2px 8px', fontSize: 11, borderRadius: 12, color: '#38bdf8', borderColor: 'rgba(56,189,248,0.4)', cursor: 'pointer' }}
+                        >
+                          ⚡ Dial
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          onClick={() => {
+                            downloadLeadVCard(lead);
+                            toast(`Saved contact DND-${lead.serialNo?.toString().padStart(3, '0') ?? ''} ${lead.name} to mobile contacts! 📇`, 'success');
+                          }}
+                          title="Save contact card to mobile contacts"
+                          style={{ padding: '2px 8px', fontSize: 11, borderRadius: 12, color: '#10d9a0', borderColor: 'rgba(16,217,160,0.4)', background: 'rgba(16,217,160,0.08)', cursor: 'pointer' }}
+                        >
+                          📇 Save Contact
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
