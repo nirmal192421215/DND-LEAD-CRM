@@ -41,7 +41,7 @@ export default function LeadsPage() {
   const { toast } = useToast();
   const [leads, setLeads] = useState<Lead[]>(() => {
     try {
-      const cached = localStorage.getItem('dnd_cached_leads_v4');
+      const cached = localStorage.getItem('dnd_cached_leads_v5');
       return cached ? JSON.parse(cached) : [];
     } catch {
       return [];
@@ -49,7 +49,7 @@ export default function LeadsPage() {
   });
   const [loading, setLoading] = useState(() => {
     try {
-      const cached = localStorage.getItem('dnd_cached_leads_v4');
+      const cached = localStorage.getItem('dnd_cached_leads_v5');
       return !cached || JSON.parse(cached).length === 0;
     } catch {
       return true;
@@ -76,7 +76,7 @@ export default function LeadsPage() {
       );
       setLeads(sorted);
       if (!filterStage && !filterPriority && filterOwner === 'ALL') {
-        localStorage.setItem('dnd_cached_leads_v4', JSON.stringify(sorted));
+        localStorage.setItem('dnd_cached_leads_v5', JSON.stringify(sorted));
       }
     } catch (err) {
       console.error('Failed to load leads:', err);
@@ -95,18 +95,21 @@ export default function LeadsPage() {
     if (text.includes('sand') || text.includes('infra') || text.includes('rental') || text.includes('material') || text.includes('machine') || text.includes('wholesale')) {
       return 'INFRA';
     }
-    if (text.includes('interior') || text.includes('decor') || text.includes('wood') || text.includes('plywood') || text.includes('ceiling') || text.includes('modular')) {
+    if (text.includes('restaurant') || text.includes('dining') || text.includes('cafe') || text.includes('biryani') || text.includes('food') || text.includes('cloud kitchen') || text.includes('mess') || text.includes('tiffen') || text.includes('tiffin') || text.includes('bakery') || text.includes('bhavan') || text.includes('hotel') || text.includes('hospitality')) {
+      return 'RESTAURANT';
+    }
+    if (text.includes('interior') || text.includes('decor') || text.includes('wood') || text.includes('plywood') || text.includes('ceiling') || text.includes('modular') || text.includes('design studio') || text.includes('design i.o') || text.includes('transforming spaces') || text.includes('pixel space') || text.includes('sree sai') || text.includes('ｓｒｅｅ') || text.includes('aadithya') || text.includes('sriko') || text.includes('associates') || text.includes('lab') || text.includes('styling') || text.includes('ksj') || text.includes('rsk') || text.includes('tempo')) {
       return 'INTERIOR';
     }
-    if (text.includes('construction') || text.includes('builder') || text.includes('architecture') || text.includes('renovation') || text.includes('building')) {
+    if (text.includes('construction') || text.includes('builder') || text.includes('brick') || text.includes('contractor') || text.includes('civil') || text.includes('building') || text.includes('turnkey')) {
       return 'CONSTRUCTION';
     }
-    return 'RESTAURANT';
+    return 'INTERIOR';
   };
 
   const CATEGORY_TABS = [
     { key: 'ALL' as const, label: 'All', icon: '🏢' },
-    { key: 'INTERIOR' as const, label: 'Interiors & Decor', icon: '🎨' },
+    { key: 'INTERIOR' as const, label: 'Interior Design', icon: '🎨' },
     { key: 'RESTAURANT' as const, label: 'Restaurants & Food', icon: '🍽️' },
     { key: 'CONSTRUCTION' as const, label: 'Construction', icon: '🏗️' },
     { key: 'INFRA' as const, label: 'Infra & Materials', icon: '⚙️' },
