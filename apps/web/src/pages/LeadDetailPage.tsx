@@ -9,6 +9,7 @@ import LiveCallDialerModal from '../components/leads/LiveCallDialerModal';
 import ProposalPanel from '../components/leads/ProposalPanel';
 import FilesPanel from '../components/leads/FilesPanel';
 import AISalesCopilot from '../components/leads/AISalesCopilot';
+import WhatsAppTemplatesModal from '../components/leads/WhatsAppTemplatesModal';
 import CreativeLoader from '../components/common/CreativeLoader';
 
 type FileAsset = {
@@ -78,6 +79,7 @@ export default function LeadDetailPage() {
 
   // DND Studio Sales Workflow Modal States
   const [showCallBackModal, setShowCallBackModal] = useState(false);
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
   const [callBackTime, setCallBackTime] = useState('');
   const [callBackNote, setCallBackNote] = useState('');
 
@@ -438,17 +440,16 @@ export default function LeadDetailPage() {
                 Call
               </button>
 
-              {/* WhatsApp button */}
-              <a
-                href={lead.phone ? `https://wa.me/${cleanWhatsAppPhone(lead.phone)}?text=${encodeURIComponent(`Hi ${lead.name}, reaching out from DND Studio regarding custom website and mobile app solutions.`)}` : '#'}
-                target="_blank"
-                rel="noopener noreferrer"
+              {/* WhatsApp button with templates */}
+              <button
+                type="button"
+                onClick={() => setShowWhatsAppModal(true)}
                 className="btn btn-secondary btn-sm"
-                style={{ borderRadius: 20, padding: '8px 16px', gap: 6, fontSize: 13, fontWeight: 600 }}
+                style={{ borderRadius: 20, padding: '8px 16px', gap: 6, fontSize: 13, fontWeight: 600, color: '#25D366' }}
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" /></svg>
                 WhatsApp
-              </a>
+              </button>
 
               {/* Email button */}
               <a
@@ -1552,6 +1553,18 @@ export default function LeadDetailPage() {
           lead={lead}
           onClose={() => setShowCallDialer(false)}
           onCallLogged={() => {
+            fetchLead();
+            setTab('timeline');
+          }}
+        />
+      )}
+
+      {/* ── 5. WhatsApp Templates & Auto Activity Logger ── */}
+      {showWhatsAppModal && lead && (
+        <WhatsAppTemplatesModal
+          lead={lead}
+          onClose={() => setShowWhatsAppModal(false)}
+          onSent={() => {
             fetchLead();
             setTab('timeline');
           }}
