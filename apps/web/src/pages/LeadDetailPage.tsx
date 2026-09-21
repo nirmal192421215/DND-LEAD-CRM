@@ -10,6 +10,7 @@ import ProposalPanel from '../components/leads/ProposalPanel';
 import FilesPanel from '../components/leads/FilesPanel';
 import AISalesCopilot from '../components/leads/AISalesCopilot';
 import WhatsAppTemplatesModal from '../components/leads/WhatsAppTemplatesModal';
+import AICallSummaryModal from '../components/leads/AICallSummaryModal';
 import CreativeLoader from '../components/common/CreativeLoader';
 
 type FileAsset = {
@@ -92,6 +93,11 @@ export default function LeadDetailPage() {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState('Already has website / App');
   const [rejectNote, setRejectNote] = useState('');
+
+  // Feature 3.2: AI Call Summary & Action Item Generator
+  const [showAISummaryModal, setShowAISummaryModal] = useState(false);
+  const [aiSummaryCallText, setAiSummaryCallText] = useState('');
+  const [aiSummaryDuration, setAiSummaryDuration] = useState(0);
 
   const fetchLead = useCallback(async () => {
     const { data } = await api.get(`/leads/${id}`);
@@ -817,14 +823,40 @@ export default function LeadDetailPage() {
                         </div>
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setCallDetectionBanner(null)}
-                      style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 14 }}
-                      title="Dismiss"
-                    >
-                      ✕
-                    </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      {callDetectionBanner.attended && (
+                        <button
+                          type="button"
+                          className="btn btn-primary btn-sm"
+                          style={{
+                            fontSize: 11,
+                            padding: '4px 10px',
+                            background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)',
+                            border: 'none',
+                            color: '#fff',
+                            fontWeight: 700,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4,
+                          }}
+                          onClick={() => {
+                            setAiSummaryCallText(`Outbound call attended for ${callDetectionBanner.durationFormatted}.`);
+                            setAiSummaryDuration(callDetectionBanner.durationSecs);
+                            setShowAISummaryModal(true);
+                          }}
+                        >
+                          ✨ AI Summarize
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setCallDetectionBanner(null)}
+                        style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 14 }}
+                        title="Dismiss"
+                      >
+                        ✕
+                      </button>
+                    </div>
                   </div>
                 )}
 
@@ -876,19 +908,44 @@ export default function LeadDetailPage() {
                 />
 
                 {/* Footer Controls */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, flexWrap: 'wrap', gap: 8 }}>
                   <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
                     <kbd style={{ background: 'var(--bg-card)', border: '1px solid var(--border-strong)', padding: '1px 5px', borderRadius: 4, fontSize: 10 }}>⌘↵</kbd> to log
                   </span>
 
-                  <button
-                    className="btn btn-primary btn-sm"
-                    style={{ borderRadius: 8, padding: '7px 16px', gap: 6 }}
-                    onClick={addActivity}
-                    disabled={!actText.trim()}
-                  >
-                    <span>✈️</span> Log activity
-                  </button>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      style={{
+                        borderRadius: 8,
+                        padding: '7px 12px',
+                        gap: 6,
+                        background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(99, 102, 241, 0.15) 100%)',
+                        borderColor: 'rgba(139, 92, 246, 0.35)',
+                        color: '#c4b5fd',
+                        fontWeight: 600,
+                        fontSize: 12,
+                        display: 'flex',
+                        alignItems: 'center',
+                      }}
+                      onClick={() => {
+                        setAiSummaryCallText(actText.trim() || `Discussed project scope with ${lead.name}`);
+                        setShowAISummaryModal(true);
+                      }}
+                    >
+                      <span>✨</span> AI Analyze & Next Action
+                    </button>
+
+                    <button
+                      className="btn btn-primary btn-sm"
+                      style={{ borderRadius: 8, padding: '7px 16px', gap: 6 }}
+                      onClick={addActivity}
+                      disabled={!actText.trim()}
+                    >
+                      <span>✈️</span> Log activity
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -957,6 +1014,31 @@ export default function LeadDetailPage() {
                           <div style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.55 }}>
                             {act.text}
                           </div>
+                          {(act.type === 'CALL' || act.type === 'NOTE') && (
+                            <div style={{ marginTop: 8 }}>
+                              <button
+                                type="button"
+                                className="btn btn-secondary btn-sm"
+                                style={{
+                                  fontSize: 11,
+                                  padding: '2px 8px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 4,
+                                  background: 'rgba(139, 92, 246, 0.1)',
+                                  color: '#c4b5fd',
+                                  borderColor: 'rgba(139, 92, 246, 0.25)',
+                                }}
+                                onClick={() => {
+                                  setAiSummaryCallText(act.text);
+                                  setAiSummaryDuration(act.durationSecs || 0);
+                                  setShowAISummaryModal(true);
+                                }}
+                              >
+                                ✨ AI Action Items & Follow-Up
+                              </button>
+                            </div>
+                          )}
                         </div>
 
                       </div>
@@ -1565,6 +1647,21 @@ export default function LeadDetailPage() {
           lead={lead}
           onClose={() => setShowWhatsAppModal(false)}
           onSent={() => {
+            fetchLead();
+            setTab('timeline');
+          }}
+        />
+      )}
+
+      {/* ── 6. Feature 3.2: AI Call Summary & Action Item Modal ── */}
+      {showAISummaryModal && lead && (
+        <AICallSummaryModal
+          isOpen={showAISummaryModal}
+          onClose={() => setShowAISummaryModal(false)}
+          lead={lead}
+          initialCallText={aiSummaryCallText}
+          durationSecs={aiSummaryDuration}
+          onLeadUpdated={() => {
             fetchLead();
             setTab('timeline');
           }}

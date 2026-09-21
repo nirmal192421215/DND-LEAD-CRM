@@ -301,3 +301,432 @@ function generateStageAwarePitch({
     ],
   };
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FEATURE 3.1: AI LEAD PRIORITIZER
+// Ranks all active leads every morning based on closing probability, stage urgency,
+// deal size, proposal views, and days since last contact.
+// ─────────────────────────────────────────────────────────────────────────────
+aiRouter.post('/prioritize-leads', async (req: AuthRequest, res: Response) => {
+  try {
+    const activeLeads = await prisma.lead.findMany({
+      where: {
+        stage: { notIn: ['WON', 'LOST'] },
+      },
+      include: {
+        owner: { select: { id: true, name: true, email: true } },
+        activities: { take: 5, orderBy: { createdAt: 'desc' } },
+        proposal: { select: { id: true, status: true, viewCount: true, lastViewedAt: true, amountLakhs: true } },
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+
+    const now = Date.now();
+
+    const scoredLeads = activeLeads.map((lead) => {
+      let score = 0;
+      const reasons: string[] = [];
+
+      // 1. Stage Weight
+      switch (lead.stage) {
+        case 'NEGOTIATION':
+          score += 45;
+          reasons.push('Final negotiation stage — closing window active');
+          break;
+        case 'PROPOSAL':
+          score += 40;
+          reasons.push('Proposal presented — high conversion potential');
+          break;
+        case 'CALL_BACK':
+          score += 35;
+          reasons.push('Callback scheduled by client request');
+          break;
+        case 'MEETING':
+          score += 30;
+          reasons.push('Meeting / live demo stage in progress');
+          break;
+        case 'NEW':
+          score += 25;
+          reasons.push('Fresh inbound lead — rapid speed-to-lead advantage');
+          break;
+        case 'CONTACTED':
+          score += 15;
+          reasons.push('Contact established — qualification required');
+          break;
+      }
+
+      // 2. Proposal Engagement Boost
+      if (lead.proposal) {
+        if (lead.proposal.viewCount > 0) {
+          score += 25;
+          reasons.push(`Client viewed proposal ${lead.proposal.viewCount} times`);
+        }
+        if (lead.proposal.status === 'Viewed') {
+          score += 15;
+        }
+      }
+
+      // 3. Callback Urgency
+      if (lead.callBackAt) {
+        const cbTime = new Date(lead.callBackAt).getTime();
+        if (cbTime <= now) {
+          score += 30;
+          reasons.push('Scheduled callback is overdue — reach out immediately');
+        } else if (cbTime <= now + 24 * 60 * 60 * 1000) {
+          score += 20;
+          reasons.push('Scheduled callback is due today');
+        }
+      }
+
+      // 4. Budget Weight
+      if (lead.budgetLakhs >= 3.0) {
+        score += 25;
+        reasons.push(`High ticket deal (₹${lead.budgetLakhs.toFixed(1)}L)`);
+      } else if (lead.budgetLakhs >= 1.5) {
+        score += 15;
+        reasons.push(`Target budget deal (₹${lead.budgetLakhs.toFixed(1)}L)`);
+      }
+
+      // 5. Stagnation / Recency
+      const daysSinceUpdate = Math.floor((now - new Date(lead.updatedAt).getTime()) / (1000 * 60 * 60 * 24));
+      if (daysSinceUpdate >= 3 && ['PROPOSAL', 'NEGOTIATION', 'MEETING'].includes(lead.stage)) {
+        score += 20;
+        reasons.push(`No activity for ${daysSinceUpdate} days — prevent deal from going cold`);
+      }
+
+      // Phone verification
+      const cleanPhone = (lead.phone || '').replace(/\D/g, '').slice(-10);
+      const hasPhone = cleanPhone.length === 10;
+      if (!hasPhone) {
+        score -= 50; // Heavily penalize leads without valid phone numbers
+      }
+
+      // Determine Urgency
+      const urgency: 'CRITICAL' | 'HIGH' | 'MEDIUM' =
+        score >= 80 ? 'CRITICAL' : score >= 55 ? 'HIGH' : 'MEDIUM';
+
+      // Conversion Likelihood (0 - 100%)
+      const conversionLikelihood = Math.min(
+        96,
+        Math.max(15, Math.round((lead.winProbability || 25) * 0.4 + score * 0.6))
+      );
+
+      // Best Time to Call
+      const nameLower = (lead.name + ' ' + (lead.projectType || '')).toLowerCase();
+      const isRestaurant = /restaurant|cafe|bistro|dining|biryani|kitchen|food|seafood/i.test(nameLower);
+      const isConstruction = /construction|builder|infra|renovation|homes|developer|interior/i.test(nameLower);
+
+      const bestTimeToCall = isRestaurant
+        ? '3:30 PM – 5:30 PM (Between lunch & dinner shifts)'
+        : isConstruction
+        ? '10:30 AM – 12:30 PM (Morning office hours)'
+        : '11:00 AM – 1:30 PM (Optimal executive availability)';
+
+      // Action & Angle
+      let recommendedAction = '';
+      let suggestedAngle = '';
+
+      if (lead.proposal && lead.proposal.viewCount > 0) {
+        recommendedAction = `Follow up on Proposal (Viewed ${lead.proposal.viewCount}x) — secure advance confirmation`;
+        suggestedAngle = `"Sir, noticed you reviewed our proposal deliverables. Ready to lock in the 14-day delivery sprint?"`;
+      } else if (lead.stage === 'CALL_BACK') {
+        recommendedAction = `Call back on schedule: ${lead.callBackNote || 'Continue project discussion'}`;
+        suggestedAngle = `"Vanakkam sir, following up as promised regarding the web application scope for ${lead.name}."`;
+      } else if (lead.stage === 'MEETING') {
+        recommendedAction = 'Confirm Google Meet walkthrough & send calendar invite';
+        suggestedAngle = `"Sir, 10-minute demo ready. Would 11:30 AM or 4 PM work best for our screen share?"`;
+      } else if (lead.stage === 'NEW') {
+        recommendedAction = 'Execute 2-minute cold discovery call & send Tanglish preview';
+        suggestedAngle = `"Vanakkam sir, Nirmal from DND Studio. We prepared a tailored digital prototype for ${lead.name}."`;
+      } else {
+        recommendedAction = 'Re-engage decision maker with updated portfolio concept';
+        suggestedAngle = `"Sir, quick 60-second update on how our client web app can increase direct customer sales."`;
+      }
+
+      return {
+        leadId: lead.id,
+        serialNo: lead.serialNo,
+        name: lead.name,
+        phone: cleanPhone || lead.phone || '',
+        location: lead.location,
+        projectType: lead.projectType,
+        budgetLakhs: lead.budgetLakhs,
+        stage: lead.stage,
+        priority: lead.priority,
+        score,
+        urgency,
+        conversionLikelihood,
+        recommendedAction,
+        aiReason: reasons.slice(0, 2).join(' · ') || 'Active pipeline opportunity',
+        bestTimeToCall,
+        suggestedAngle,
+        ownerName: lead.owner?.name || 'Nirmal kumar',
+      };
+    });
+
+    // Sort by score descending
+    scoredLeads.sort((a, b) => b.score - a.score);
+
+    // Assign ranking
+    const prioritized = scoredLeads.map((item, index) => ({
+      ...item,
+      priorityRank: index + 1,
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        totalActive: prioritized.length,
+        criticalCount: prioritized.filter((l) => l.urgency === 'CRITICAL').length,
+        highCount: prioritized.filter((l) => l.urgency === 'HIGH').length,
+        pipelineValueLakhs: prioritized.reduce((acc, l) => acc + l.budgetLakhs, 0),
+        prioritizedLeads: prioritized.slice(0, 15), // Return top 15 priority leads
+      },
+    });
+  } catch (error: any) {
+    console.error('Error prioritizing leads:', error);
+    res.status(500).json({ success: false, message: error.message || 'Failed to prioritize leads' });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FEATURE 3.2: AI CALL SUMMARY & ACTION ITEM GENERATOR
+// Takes call notes or duration, detects sentiment, extracts concrete action items,
+// recommends next CRM stage, and writes a tailored WhatsApp follow-up.
+// ─────────────────────────────────────────────────────────────────────────────
+const SummarizeCallSchema = z.object({
+  leadId: z.string(),
+  callText: z.string().min(3),
+  durationSecs: z.number().optional().default(0),
+  attended: z.boolean().optional().default(true),
+});
+
+aiRouter.post('/summarize-call', async (req: AuthRequest, res: Response) => {
+  try {
+    const { leadId, callText, durationSecs, attended } = SummarizeCallSchema.parse(req.body);
+
+    const lead = await prisma.lead.findUnique({
+      where: { id: leadId },
+      include: {
+        owner: { select: { name: true } },
+      },
+    });
+
+    if (!lead) {
+      return res.status(404).json({ success: false, message: 'Lead not found' });
+    }
+
+    const textLower = callText.toLowerCase();
+
+    // 1. Detect Sentiment
+    let sentiment: 'VERY_POSITIVE' | 'POSITIVE' | 'NEUTRAL' | 'HESITANT' | 'PRICE_SENSITIVE' | 'NEGATIVE' = 'NEUTRAL';
+    if (/ready to close|sign contract|take advance|approved|transfer money|let's start|deal confirmed/i.test(textLower)) {
+      sentiment = 'VERY_POSITIVE';
+    } else if (/interested|impressive|good concept|send quote|send proposal|schedule demo|wants demo|liked/i.test(textLower)) {
+      sentiment = 'POSITIVE';
+    } else if (/expensive|discount|reduce price|high rate|budget tight|less money|costly/i.test(textLower)) {
+      sentiment = 'PRICE_SENSITIVE';
+    } else if (/talk to partner|need time|busy|call back next week|think about it|not decided/i.test(textLower)) {
+      sentiment = 'HESITANT';
+    } else if (/not interested|don't call|already built|have someone|no requirement|cancel/i.test(textLower)) {
+      sentiment = 'NEGATIVE';
+    }
+
+    // 2. Extract Action Items
+    const actionItems: string[] = [];
+    if (/quote|quotation|proposal|pricing|commercial/i.test(textLower)) {
+      actionItems.push(`Prepare & send detailed quotation for ₹${lead.budgetLakhs}L with milestone terms`);
+    }
+    if (/demo|meet|meeting|screen share|presentation/i.test(textLower)) {
+      actionItems.push('Schedule 15-minute Google Meet walkthrough demonstration');
+    }
+    if (/whatsapp|sample|portfolio|reference|links/i.test(textLower)) {
+      actionItems.push('Drop live portfolio links and case studies on WhatsApp');
+    }
+    if (/call back|tomorrow|next week|after 4|evening/i.test(textLower)) {
+      actionItems.push('Set CRM callback reminder with specific time slot');
+    }
+    if (/partner|director|management/i.test(textLower)) {
+      actionItems.push('Draft 2-minute decision-maker summary for partner review');
+    }
+    if (actionItems.length === 0) {
+      actionItems.push(`Send executive summary of discussion to ${lead.name}`);
+      actionItems.push('Follow up in 48 hours to gauge progress');
+    }
+
+    // 3. Recommended Next Stage
+    let recommendedNextStage: string = lead.stage;
+    let winProbabilityDelta = 0;
+
+    if (sentiment === 'VERY_POSITIVE') {
+      recommendedNextStage = 'PROPOSAL';
+      winProbabilityDelta = 25;
+    } else if (sentiment === 'POSITIVE') {
+      recommendedNextStage = lead.stage === 'NEW' ? 'MEETING' : 'PROPOSAL';
+      winProbabilityDelta = 15;
+    } else if (sentiment === 'PRICE_SENSITIVE') {
+      recommendedNextStage = 'NEGOTIATION';
+      winProbabilityDelta = 5;
+    } else if (sentiment === 'HESITANT') {
+      recommendedNextStage = 'CALL_BACK';
+      winProbabilityDelta = 0;
+    } else if (sentiment === 'NEGATIVE') {
+      winProbabilityDelta = -20;
+    }
+
+    // 4. Tailored WhatsApp Follow-up Message
+    const cleanPhone = (lead.phone || '').replace(/\D/g, '').slice(-10);
+    const ownerName = lead.owner?.name || 'Nirmal kumar';
+
+    let suggestedWhatsApp = '';
+    if (sentiment === 'VERY_POSITIVE' || sentiment === 'POSITIVE') {
+      suggestedWhatsApp =
+        `*Vanakkam from DND Studio! 🚀*\n\n` +
+        `Hi *${lead.name}* team,\n\n` +
+        `Thank you for taking the time to speak today! As discussed, here is the quick recap for your *${lead.projectType || 'Web & Mobile App'}*:\n\n` +
+        `• ⚡ Lightning-fast custom web application\n` +
+        `• 📱 Direct WhatsApp customer inquiry automation\n` +
+        `• ⏱️ Ready for launch within 14 working days\n\n` +
+        `We are finalizing your custom proposal right now. Let us know if you would like us to send the PDF here on WhatsApp!\n\n` +
+        `— *${ownerName}*, DND Studio\n` +
+        `📞 +91 9342626096`;
+    } else if (sentiment === 'PRICE_SENSITIVE') {
+      suggestedWhatsApp =
+        `*DND Studio — Flexible Project Milestones 🤝*\n\n` +
+        `Hi *${lead.name}* team,\n\n` +
+        `Great connecting with you today! We understand budget alignment is crucial. To make this risk-free for you:\n\n` +
+        `✓ 50% on project kickoff · 50% upon live launch\n` +
+        `✓ Complimentary 1-year Cloud Hosting & SSL included\n` +
+        `✓ 90 days dedicated technical maintenance\n\n` +
+        `Let us know if you would like to review the milestone plan!\n\n` +
+        `— *${ownerName}*, DND Studio`;
+    } else {
+      suggestedWhatsApp =
+        `*Greetings from DND Studio! 🌟*\n\n` +
+        `Hi *${lead.name}* team,\n\n` +
+        `Thank you for the quick chat. Dropping our contact details here so you have them on hand for your upcoming *${lead.projectType || 'digital project'}*.\n\n` +
+        `Feel free to ping us here anytime!\n\n` +
+        `— *${ownerName}*, Founder @ DND Studio\n` +
+        `📞 +91 9342626096 | 🌐 dndstudio.in`;
+    }
+
+    // 5. Executive 2-Sentence Briefing
+    const minutes = Math.floor(durationSecs / 60);
+    const seconds = durationSecs % 60;
+    const durationStr = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+
+    const summary = attended
+      ? `Completed ${durationStr} discussion with ${lead.name}. Sentiment detected as ${sentiment.replace('_', ' ')}. Client showed interest in ${lead.projectType || 'digital platform'} with target budget around ₹${lead.budgetLakhs}L.`
+      : `Outbound call attempted to ${lead.name} (${durationStr}) was not answered. Follow up queued for optimal contact window.`;
+
+    res.json({
+      success: true,
+      data: {
+        leadId: lead.id,
+        leadName: lead.name,
+        phone: cleanPhone,
+        sentiment,
+        attended,
+        durationFormatted: durationStr,
+        executiveSummary: summary,
+        actionItems,
+        recommendedNextStage,
+        winProbabilityDelta,
+        suggestedWhatsApp,
+      },
+    });
+  } catch (error: any) {
+    console.error('Error summarizing call:', error);
+    res.status(500).json({ success: false, message: error.message || 'Failed to summarize call' });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FEATURE 3.4: CONVERSATION INTELLIGENCE (NOTE & CALL ANALYZER)
+// Detects buying signals, objections, and sentiment from any raw text.
+// ─────────────────────────────────────────────────────────────────────────────
+aiRouter.post('/analyze-note', async (req: AuthRequest, res: Response) => {
+  try {
+    const { text } = z.object({ text: z.string().min(1) }).parse(req.body);
+    const textLower = text.toLowerCase();
+
+    const buyingSignals: string[] = [];
+    if (/when can you deliver|delivery date|timeline|how soon/i.test(textLower)) buyingSignals.push('Timeline inquiry (High Intent)');
+    if (/how much|cost|rate|pricing|quotation|payment/i.test(textLower)) buyingSignals.push('Pricing & Commercial interest');
+    if (/demo|show me|walkthrough|sample|preview/i.test(textLower)) buyingSignals.push('Requested Product Demonstration');
+    if (/start|advance|agreement|kickoff|contract/i.test(textLower)) buyingSignals.push('Closing / Kickoff Readiness');
+
+    const objections: string[] = [];
+    if (/expensive|budget|discount|reduce/i.test(textLower)) objections.push('Pricing / Budget constraint');
+    if (/partner|director|boss|discuss/i.test(textLower)) objections.push('Multi-stakeholder approval needed');
+    if (/busy|later|next month|next quarter/i.test(textLower)) objections.push('Timing / Postponement');
+    if (/already have|current vendor|internal team/i.test(textLower)) objections.push('Competitor / Existing Solution');
+
+    const sentiment =
+      buyingSignals.length > objections.length ? 'POSITIVE' :
+      objections.length > buyingSignals.length ? 'HESITANT' : 'NEUTRAL';
+
+    res.json({
+      success: true,
+      data: {
+        sentiment,
+        buyingSignals,
+        objections,
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message || 'Analysis failed' });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FEATURE 3.5: PREDICTIVE WIN PROBABILITY
+// Automatically predicts closing probability based on lead behavior & velocity.
+// ─────────────────────────────────────────────────────────────────────────────
+aiRouter.post('/predict-win', async (req: AuthRequest, res: Response) => {
+  try {
+    const { leadId } = z.object({ leadId: z.string() }).parse(req.body);
+
+    const lead = await prisma.lead.findUnique({
+      where: { id: leadId },
+      include: {
+        activities: true,
+        proposal: true,
+        meetings: true,
+      },
+    });
+
+    if (!lead) return res.status(404).json({ success: false, message: 'Lead not found' });
+
+    let winRate = 15; // base
+
+    if (lead.stage === 'NEGOTIATION') winRate += 55;
+    else if (lead.stage === 'PROPOSAL') winRate += 40;
+    else if (lead.stage === 'MEETING') winRate += 25;
+    else if (lead.stage === 'CONTACTED') winRate += 10;
+
+    if (lead.proposal?.viewCount && lead.proposal.viewCount > 0) winRate += 15;
+    if (lead.proposal?.status === 'Accepted') winRate = 100;
+    if (lead.totalCallDurationSecs > 180) winRate += 10;
+    if (lead.activities.length >= 3) winRate += 5;
+
+    winRate = Math.min(98, Math.max(5, winRate));
+
+    // Update in DB
+    await prisma.lead.update({
+      where: { id: leadId },
+      data: { winProbability: winRate },
+    });
+
+    res.json({
+      success: true,
+      data: {
+        leadId,
+        predictedWinRate: winRate,
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message || 'Failed to predict win rate' });
+  }
+});
+

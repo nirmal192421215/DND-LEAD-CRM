@@ -545,6 +545,87 @@ if (isDemoMode) {
         };
       }
 
+      // 17. POST /ai/prioritize-leads
+      if (url.includes('/ai/prioritize-leads') && method === 'post') {
+        const active = leads.filter(l => !['WON', 'LOST'].includes(l.stage));
+        const prioritized = active.map((l, idx) => ({
+          leadId: l.id,
+          serialNo: idx + 1,
+          name: l.name,
+          phone: (l.phone || '').replace(/\D/g, '').slice(-10),
+          location: l.location,
+          projectType: l.projectType,
+          budgetLakhs: l.budgetLakhs,
+          stage: l.stage,
+          priority: l.priority,
+          score: l.stage === 'PROPOSAL' ? 92 : l.stage === 'CALL_BACK' ? 88 : l.stage === 'MEETING' ? 84 : 70,
+          urgency: (l.stage === 'PROPOSAL' || l.stage === 'CALL_BACK') ? 'CRITICAL' : 'HIGH',
+          conversionLikelihood: l.stage === 'PROPOSAL' ? 85 : 65,
+          recommendedAction: l.stage === 'PROPOSAL'
+            ? 'Follow up on proposal — close milestone advance'
+            : l.stage === 'CALL_BACK'
+            ? 'Scheduled callback due — qualify timeline & budget'
+            : 'Schedule 15-min Google Meet demonstration',
+          aiReason: `High value opportunity (₹${l.budgetLakhs}L) in ${l.location}`,
+          bestTimeToCall: '11:00 AM – 1:30 PM (Optimal executive availability)',
+          suggestedAngle: `"Vanakkam sir! Following up from DND Studio regarding ${l.projectType}."`,
+          priorityRank: idx + 1,
+        })).sort((a: any, b: any) => b.score - a.score).map((item, idx) => ({ ...item, priorityRank: idx + 1 }));
+
+        return {
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          config: cfg,
+          data: {
+            success: true,
+            data: {
+              totalActive: prioritized.length,
+              criticalCount: prioritized.filter((p: any) => p.urgency === 'CRITICAL').length,
+              highCount: prioritized.filter((p: any) => p.urgency === 'HIGH').length,
+              pipelineValueLakhs: prioritized.reduce((acc: number, p: any) => acc + p.budgetLakhs, 0),
+              prioritizedLeads: prioritized.slice(0, 15),
+            }
+          }
+        };
+      }
+
+      // 18. POST /ai/summarize-call
+      if (url.includes('/ai/summarize-call') && method === 'post') {
+        const { leadId, callText, durationSecs, attended } = data || {};
+        const targetLead = leads.find(l => l.id === leadId);
+        const mins = Math.floor((durationSecs || 0) / 60);
+        const secs = (durationSecs || 0) % 60;
+        const durFormatted = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+
+        return {
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          config: cfg,
+          data: {
+            success: true,
+            data: {
+              leadId: leadId || 'mock-id',
+              leadName: targetLead?.name || 'Valued Client',
+              phone: (targetLead?.phone || '').replace(/\D/g, '').slice(-10),
+              sentiment: 'POSITIVE',
+              attended: attended ?? true,
+              durationFormatted: durFormatted,
+              executiveSummary: `Completed productive discussion (${durFormatted}) with ${targetLead?.name || 'client'}. Client expressed keen interest in ${targetLead?.projectType || 'digital platform'} solutions.`,
+              actionItems: [
+                `Send revised commercial proposal for ₹${targetLead?.budgetLakhs || 2.5}L`,
+                'Confirm 15-minute Google Meet walkthrough demo',
+                'Share portfolio links on WhatsApp'
+              ],
+              recommendedNextStage: targetLead?.stage === 'NEW' ? 'MEETING' : 'PROPOSAL',
+              winProbabilityDelta: 15,
+              suggestedWhatsApp: `*Vanakkam from DND Studio! 🚀*\n\nHi *${targetLead?.name || 'team'}*,\n\nThank you for the wonderful discussion today! We are preparing your custom concept proposal for *${targetLead?.projectType || 'Web & Mobile App'}*.\n\nLooking forward to working together!\n\n— Nirmal kumar, DND Studio\n📞 +91 9342626096`,
+            }
+          }
+        };
+      }
+
       return Promise.reject({ response: { status: 404, data: { message: 'Not found mock API' } } });
     };
 

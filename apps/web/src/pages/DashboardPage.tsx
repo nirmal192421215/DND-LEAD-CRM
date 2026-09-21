@@ -6,6 +6,7 @@ import { formatBudget, stageLabel, cleanPhone, cleanWhatsAppPhone, format10Digit
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import CreativeLoader from '../components/common/CreativeLoader';
+import AIPriorityWidget from '../components/dashboard/AIPriorityWidget';
 
 // ── Mini SVG Bar Chart ────────────────────────────────────────────────────────
 function BarChart({ data }: { data: { label: string; value: number; color?: string }[] }) {
@@ -360,6 +361,9 @@ export default function DashboardPage() {
 
         {/* Right Column — Operational Tasks & Quick Workflows */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+          {/* 🧠 Feature 3.1: AI Lead Prioritizer & Morning Focus Copilot */}
+          <AIPriorityWidget />
 
           {/* ⚡ Today's Action Center & Follow-Up Tasks */}
           {(() => {

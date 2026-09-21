@@ -85,8 +85,28 @@ export default function ProposalPanel({ leadId, proposal, leadBudget, onUpdated 
           background: 'var(--bg-elevated)', borderRadius: 'var(--radius-md)',
           padding: 16, border: '1px solid var(--border)', marginBottom: 16,
         }}>
-          <div style={{ marginBottom: 12, fontWeight: 600, fontSize: 13 }}>
-            {proposal ? `Revise Proposal (v${proposal.version + 1})` : 'New Proposal'}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <div style={{ fontWeight: 600, fontSize: 13 }}>
+              {proposal ? `Revise Proposal (v${proposal.version + 1})` : 'New Proposal'}
+            </div>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              style={{
+                fontSize: 11,
+                padding: '3px 8px',
+                background: 'rgba(139, 92, 246, 0.15)',
+                borderColor: 'rgba(139, 92, 246, 0.35)',
+                color: '#c4b5fd',
+              }}
+              onClick={() => {
+                const targetBudget = leadBudget > 0 ? leadBudget : 1.5;
+                setAmount(targetBudget.toFixed(1));
+                toast(`AI calibrated scope to ₹${targetBudget.toFixed(1)}L with 50-50 milestone breakdown! ✨`, 'success');
+              }}
+            >
+              ✨ AI Optimize Pricing
+            </button>
           </div>
           <div className="form-group" style={{ marginBottom: 12 }}>
             <label className="form-label">Proposed Amount (₹ Lakhs)</label>
@@ -105,10 +125,12 @@ export default function ProposalPanel({ leadId, proposal, leadBudget, onUpdated 
               <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>L</span>
             </div>
             {leadBudget > 0 && (
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
-                Client budget: ₹{leadBudget}L
-                {parseFloat(amount) > leadBudget && (
-                  <span style={{ color: 'var(--rose)', marginLeft: 8 }}>⚠ Above client budget</span>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, display: 'flex', justifyContent: 'space-between' }}>
+                <span>Client budget: ₹{leadBudget}L</span>
+                {parseFloat(amount) > leadBudget ? (
+                  <span style={{ color: 'var(--rose)' }}>⚠ Above client budget</span>
+                ) : (
+                  <span style={{ color: '#10b981' }}>✓ Within client budget</span>
                 )}
               </div>
             )}
