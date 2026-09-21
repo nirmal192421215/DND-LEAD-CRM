@@ -5,6 +5,7 @@ import type { Lead } from '@bind-build/shared';
 import { formatBudget, stageLabel, SOURCE_ICONS, cleanPhone, cleanWhatsAppPhone, format10DigitPhone, downloadLeadVCard } from '../lib/utils';
 import KanbanBoard from '../components/leads/KanbanBoard';
 import CreateLeadModal from '../components/leads/CreateLeadModal';
+import CSVImportModal from '../components/leads/CSVImportModal';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 import CreativeLoader from '../components/common/CreativeLoader';
@@ -57,6 +58,7 @@ export default function LeadsPage() {
   });
   const [view, setView] = useState<ViewMode>('kanban');
   const [showCreate, setShowCreate] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [filterCategory, setFilterCategory] = useState<'ALL' | 'INTERIOR' | 'RESTAURANT' | 'CONSTRUCTION' | 'INFRA'>('ALL');
   const [filterStage, setFilterStage] = useState<string>('');
   const [filterPriority, setFilterPriority] = useState<string>('');
@@ -187,6 +189,27 @@ export default function LeadsPage() {
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
             </svg>
             Export CSV
+          </button>
+          {/* CSV Bulk Import */}
+          <button
+            id="import-csv-btn"
+            className="btn btn-secondary btn-sm"
+            onClick={() => setShowImport(true)}
+            title="Bulk Import Google Maps CSV Leads"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              background: 'rgba(108, 99, 255, 0.12)',
+              border: '1px solid rgba(108, 99, 255, 0.35)',
+              color: 'var(--brand-light)',
+              fontWeight: 500,
+            }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+            </svg>
+            Import CSV
           </button>
           <button id="add-lead-btn" className="btn btn-primary" onClick={() => setShowCreate(true)}>
             + New Lead
@@ -472,6 +495,17 @@ export default function LeadsPage() {
             setShowCreate(false);
             fetchLeads();
             toast('Lead created successfully! 🎉', 'success');
+          }}
+        />
+      )}
+
+      {showImport && (
+        <CSVImportModal
+          onClose={() => setShowImport(false)}
+          existingLeads={leads}
+          onImported={(count) => {
+            fetchLeads();
+            toast(`🎉 ${count} leads imported successfully into pipeline!`, 'success');
           }}
         />
       )}

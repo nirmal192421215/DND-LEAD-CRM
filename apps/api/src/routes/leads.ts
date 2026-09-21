@@ -124,6 +124,138 @@ leadsRouter.post('/realign-serials', async (_req: AuthRequest, res: Response) =>
   res.json({ success: true, message: 'Serial numbers re-aligned to 1..N' });
 });
 
+const BulkImportSchema = z.object({
+  leads: z.array(z.object({
+    name: z.string().min(1),
+    phone: z.string().optional().nullable(),
+    projectType: z.string().optional().nullable(),
+    projectDescription: z.string().optional().nullable(),
+    location: z.string().optional().nullable(),
+    budgetLakhs: z.number().optional().nullable(),
+    source: z.enum(['Instagram', 'Google', 'Referral', 'Website', 'Direct', 'WalkIn']).optional(),
+    priority: z.enum(['HOT', 'WARM', 'COLD']).optional(),
+    stage: z.enum(['NEW', 'CONTACTED', 'CALL_BACK', 'MEETING', 'PROPOSAL', 'NEGOTIATION', 'WON', 'LOST']).optional(),
+    email: z.string().optional().nullable(),
+    winProbability: z.number().min(0).max(100).optional(),
+    tags: z.array(z.string()).optional(),
+  })),
+  options: z.object({
+    skipDuplicates: z.boolean().default(true),
+    ownerId: z.string().optional(),
+    defaultPriority: z.enum(['HOT', 'WARM', 'COLD']).optional(),
+    defaultSource: z.enum(['Instagram', 'Google', 'Referral', 'Website', 'Direct', 'WalkIn']).optional(),
+  }).optional(),
+});
+
+// POST /api/leads/bulk-import
+leadsRouter.post('/bulk-import', async (req: AuthRequest, res: Response) => {
+  const body = BulkImportSchema.parse(req.body);
+  const skipDuplicates = body.options?.skipDuplicates ?? true;
+  const ownerId = body.options?.ownerId || req.user!.userId;
+
+  // Align Postgres sequence to continue from max serial number
+  try {
+    await prisma.$executeRawUnsafe(`
+      SELECT setval(
+        pg_get_serial_sequence('leads', 'serialNo'),
+        COALESCE((SELECT MAX("serialNo") FROM leads), 0) + 1,
+        false
+      );
+    `);
+  } catch (err) {
+    console.warn('Could not reset sequence for bulk import:', err);
+  }
+
+  // Fetch existing phones and names for deduplication
+  const existingLeads = await prisma.lead.findMany({
+    select: { phone: true, name: true },
+  });
+
+  const existingPhones = new Set<string>();
+  const existingNames = new Set<string>();
+  for (const el of existingLeads) {
+    if (el.phone) {
+      const p = el.phone.replace(/\D/g, '').slice(-10);
+      if (p.length === 10) existingPhones.add(p);
+    }
+    if (el.name) existingNames.add(el.name.trim().toLowerCase());
+  }
+
+  const createdLeads: any[] = [];
+  let skippedCount = 0;
+
+  for (const item of body.leads) {
+    const digits = (item.phone || '').replace(/\D/g, '');
+    let cleanedPhone = digits;
+    if (digits.length === 12 && digits.startsWith('91')) cleanedPhone = digits.slice(2);
+    else if (digits.length === 11 && digits.startsWith('0')) cleanedPhone = digits.slice(1);
+    else if (digits.length > 10) cleanedPhone = digits.slice(-10);
+
+    // Rule: Reject any lead without a valid 10-digit phone
+    if (cleanedPhone.length !== 10) {
+      skippedCount++;
+      continue;
+    }
+
+    const nameKey = item.name.trim().toLowerCase();
+    if (skipDuplicates && (existingPhones.has(cleanedPhone) || existingNames.has(nameKey))) {
+      skippedCount++;
+      continue;
+    }
+
+    existingPhones.add(cleanedPhone);
+    existingNames.add(nameKey);
+
+    const newLead = await prisma.lead.create({
+      data: {
+        name: item.name.trim(),
+        phone: cleanedPhone,
+        projectType: item.projectType?.trim() || 'Interior Design',
+        projectDescription: item.projectDescription?.trim() || null,
+        location: item.location?.trim() || 'Coimbatore',
+        budgetLakhs: item.budgetLakhs && item.budgetLakhs > 0 ? item.budgetLakhs : 15,
+        source: item.source || body.options?.defaultSource || 'Google',
+        priority: item.priority || body.options?.defaultPriority || 'WARM',
+        stage: item.stage || 'NEW',
+        email: item.email?.trim() || null,
+        winProbability: item.winProbability ?? 30,
+        tags: JSON.stringify(item.tags && item.tags.length ? item.tags : ['Google Maps']),
+        ownerId,
+        stageChangedAt: new Date(),
+      },
+      select: LEAD_SELECT,
+    });
+    createdLeads.push(newLead);
+  }
+
+  if (createdLeads.length > 0) {
+    await prisma.activity.createMany({
+      data: createdLeads.map((l) => ({
+        leadId: l.id,
+        type: 'STAGE_CHANGE',
+        text: `Lead bulk-imported from CSV into New Enquiry`,
+        createdById: req.user!.userId,
+      })),
+    });
+    invalidateAnalyticsCache();
+  }
+
+  const parsed = createdLeads.map((l) => ({
+    ...l,
+    tags: JSON.parse((l['tags'] as string) ?? '[]'),
+  }));
+
+  res.status(201).json({
+    success: true,
+    inserted: createdLeads.length,
+    skipped: skippedCount,
+    total: body.leads.length,
+    firstSerial: createdLeads[0]?.serialNo ?? null,
+    lastSerial: createdLeads[createdLeads.length - 1]?.serialNo ?? null,
+    data: parsed,
+  });
+});
+
 // GET /api/leads/:id
 leadsRouter.get('/:id', async (req: AuthRequest, res: Response) => {
   const lead = await prisma.lead.findUnique({
