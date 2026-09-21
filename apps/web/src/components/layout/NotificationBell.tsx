@@ -25,15 +25,55 @@ export default function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
+  const [pushPermission, setPushPermission] = useState<NotificationPermission>(() => {
+    return typeof window !== 'undefined' && 'Notification' in window ? Notification.permission : 'default';
+  });
   const navigate = useNavigate();
   const dropdownRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const prevCountRef = useRef<number>(0);
+
+  const enablePush = async () => {
+    if (!('Notification' in window)) {
+      alert('Your browser does not support desktop notifications.');
+      return;
+    }
+    const res = await Notification.requestPermission();
+    setPushPermission(res);
+    if (res === 'granted') {
+      new Notification('🔔 Notifications Enabled!', {
+        body: 'You will receive desktop alerts for callbacks, lead moves, and client proposal views.',
+        icon: '/vite.svg',
+      });
+    }
+  };
 
   const fetchNotifications = useCallback(async () => {
     try {
       const { data } = await api.get('/notifications');
-      setNotifications(data.data.notifications);
-      setUnreadCount(data.data.unreadCount);
+      const list: Notification[] = data.data.notifications || [];
+      const newUnread: number = data.data.unreadCount || 0;
+
+      // Trigger native notification if new unread arrived
+      if (
+        prevCountRef.current !== 0 &&
+        newUnread > prevCountRef.current &&
+        typeof window !== 'undefined' &&
+        'Notification' in window &&
+        Notification.permission === 'granted' &&
+        list.length > 0
+      ) {
+        const latest = list[0];
+        if (!latest.read) {
+          new Notification(latest.title, {
+            body: latest.body,
+            icon: '/vite.svg',
+          });
+        }
+      }
+      prevCountRef.current = newUnread;
+      setNotifications(list);
+      setUnreadCount(newUnread);
     } catch { /* silent fail */ }
   }, []);
 
@@ -149,6 +189,37 @@ export default function NotificationBell() {
               </button>
             )}
           </div>
+
+          {/* Push Permission Banner */}
+          {pushPermission !== 'granted' && (
+            <div style={{
+              padding: '8px 16px',
+              background: 'rgba(108, 99, 255, 0.08)',
+              borderBottom: '1px solid var(--border)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              fontSize: 11,
+            }}>
+              <span style={{ color: 'var(--text-secondary)' }}>Get instant desktop alerts for leads</span>
+              <button
+                type="button"
+                onClick={enablePush}
+                style={{
+                  background: 'var(--brand)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 6,
+                  padding: '3px 8px',
+                  fontSize: 10,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                🔔 Enable
+              </button>
+            </div>
+          )}
 
           {/* Notification list */}
           <div style={{ maxHeight: 400, overflowY: 'auto' }}>

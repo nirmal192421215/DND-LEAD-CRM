@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import api from '../../lib/api';
-import { formatDate } from '../../lib/utils';
+import { formatDate, timeAgo } from '../../lib/utils';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 
@@ -162,6 +162,49 @@ export default function ProposalPanel({ leadId, proposal, leadBudget, onUpdated 
                 <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{m.label}</div>
               </div>
             ))}
+          </div>
+
+          {/* Real-time Tracking Signals */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '10px 14px',
+            borderRadius: 'var(--radius-md)',
+            background: proposal.status === 'Accepted' ? 'rgba(16,217,160,0.12)' : proposal.viewCount > 0 ? 'rgba(245, 166, 35, 0.12)' : 'var(--bg-elevated)',
+            border: `1px solid ${proposal.status === 'Accepted' ? '#10d9a0' : proposal.viewCount > 0 ? '#f5a623' : 'var(--border)'}`,
+            marginBottom: 16,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 16 }}>{proposal.status === 'Accepted' ? '🏆' : proposal.viewCount > 0 ? '🔥' : '📤'}</span>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: proposal.status === 'Accepted' ? '#10d9a0' : proposal.viewCount > 0 ? '#f5a623' : 'var(--text-primary)' }}>
+                  {proposal.status === 'Accepted'
+                    ? 'Client Accepted the Proposal!'
+                    : proposal.viewCount > 0
+                    ? `Hot Signal · Viewed ${proposal.viewCount} times`
+                    : 'Proposal Sent · Awaiting First View'}
+                </div>
+                {proposal.lastViewedAt && (
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>
+                    Last viewed {timeAgo(proposal.lastViewedAt)}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => {
+                const link = `${window.location.origin}/proposals/view/${proposal.id}`;
+                navigator.clipboard.writeText(link);
+                toast('🔗 Client proposal tracking link copied! Send on WhatsApp or Email', 'success');
+              }}
+              style={{ fontSize: 11, padding: '4px 10px', gap: 4 }}
+            >
+              🔗 Copy Client Link
+            </button>
           </div>
 
           {/* Sent by */}

@@ -1,10 +1,103 @@
-import { Router, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { createNotification } from './notifications';
 
 export const proposalsRouter = Router();
+
+// Public Client Proposal View & Real-Time Tracking Endpoint (Phase 2.5)
+proposalsRouter.get('/public/:id', async (req: Request, res: Response) => {
+  const proposal = await prisma.proposal.findUnique({
+    where: { id: req.params['id'] },
+    include: {
+      lead: { select: { id: true, name: true, projectType: true, budgetLakhs: true, location: true, phone: true, email: true } },
+      createdBy: { select: { id: true, name: true, initials: true, email: true } },
+    },
+  });
+  if (!proposal) {
+    res.status(404).json({ success: false, error: 'Proposal not found' });
+    return;
+  }
+
+  // Increment view count & record timestamp
+  const updated = await prisma.proposal.update({
+    where: { id: req.params['id'] },
+    data: {
+      viewCount: { increment: 1 },
+      lastViewedAt: new Date(),
+      status: proposal.status === 'Sent' ? 'Viewed' : proposal.status,
+    },
+  });
+
+  // Notify salesperson in real-time
+  try {
+    await createNotification(
+      proposal.createdById,
+      'proposal_viewed',
+      '👁️ Proposal Viewed!',
+      `${proposal.lead.name} just opened your proposal! (Total views: ${updated.viewCount})`,
+      proposal.leadId
+    );
+    await prisma.activity.create({
+      data: {
+        leadId: proposal.leadId,
+        type: 'STAGE_CHANGE',
+        text: `Client opened proposal link (View #${updated.viewCount})`,
+        createdById: proposal.createdById,
+      },
+    });
+  } catch (err) {
+    console.error('Failed to log proposal view activity:', err);
+  }
+
+  res.json({ success: true, data: { ...proposal, viewCount: updated.viewCount, lastViewedAt: updated.lastViewedAt } });
+});
+
+// Public Client Accept Proposal Endpoint
+proposalsRouter.post('/public/:id/accept', async (req: Request, res: Response) => {
+  const proposal = await prisma.proposal.findUnique({
+    where: { id: req.params['id'] },
+    include: { lead: { select: { id: true, name: true } } },
+  });
+  if (!proposal) {
+    res.status(404).json({ success: false, error: 'Proposal not found' });
+    return;
+  }
+
+  await prisma.proposal.update({
+    where: { id: req.params['id'] },
+    data: { status: 'Accepted' },
+  });
+
+  await prisma.lead.update({
+    where: { id: proposal.leadId },
+    data: { stage: 'WON', wonAt: new Date() },
+  });
+
+  try {
+    await createNotification(
+      proposal.createdById,
+      'lead_won',
+      '🏆 Proposal Accepted! DEAL WON!',
+      `${proposal.lead.name} accepted your proposal of ₹${proposal.amountLakhs}L!`,
+      proposal.leadId
+    );
+    await prisma.activity.create({
+      data: {
+        leadId: proposal.leadId,
+        type: 'STAGE_CHANGE',
+        text: `🏆 Client accepted proposal of ₹${proposal.amountLakhs}L! Moved to Won!`,
+        createdById: proposal.createdById,
+      },
+    });
+  } catch (err) {
+    console.error('Failed to log proposal acceptance:', err);
+  }
+
+  res.json({ success: true, message: 'Proposal accepted' });
+});
+
 proposalsRouter.use(authenticate);
 
 const CreateProposalSchema = z.object({

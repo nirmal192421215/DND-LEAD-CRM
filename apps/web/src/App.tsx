@@ -14,6 +14,7 @@ const LeadDetailPage = lazy(() => import('./pages/LeadDetailPage'));
 const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const TeamPage = lazy(() => import('./pages/TeamPage'));
+const PublicProposalPage = lazy(() => import('./pages/PublicProposalPage'));
 
 import CreativeLoader from './components/common/CreativeLoader';
 
@@ -47,6 +48,14 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage />} />
+      <Route
+        path="/proposals/view/:id"
+        element={
+          <Suspense fallback={<PageLoader />}>
+            <PublicProposalPage />
+          </Suspense>
+        }
+      />
       <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
         <Route index element={<DashboardPage />} />
         <Route
