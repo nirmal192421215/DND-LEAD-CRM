@@ -11,6 +11,7 @@ import FilesPanel from '../components/leads/FilesPanel';
 import AISalesCopilot from '../components/leads/AISalesCopilot';
 import WhatsAppTemplatesModal from '../components/leads/WhatsAppTemplatesModal';
 import AICallSummaryModal from '../components/leads/AICallSummaryModal';
+import InvoiceModal from '../components/leads/InvoiceModal';
 import CreativeLoader from '../components/common/CreativeLoader';
 
 type FileAsset = {
@@ -98,6 +99,9 @@ export default function LeadDetailPage() {
   const [showAISummaryModal, setShowAISummaryModal] = useState(false);
   const [aiSummaryCallText, setAiSummaryCallText] = useState('');
   const [aiSummaryDuration, setAiSummaryDuration] = useState(0);
+
+  // Feature 4.3: Invoicing & Payment Tracker
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
 
   const fetchLead = useCallback(async () => {
     const { data } = await api.get(`/leads/${id}`);
@@ -491,6 +495,29 @@ export default function LeadDetailPage() {
                 }}
               >
                 📇 Save Contact
+              </button>
+
+              {/* Feature 4.3: Invoicing & Payment Tracker */}
+              <button
+                type="button"
+                onClick={() => setShowInvoiceModal(true)}
+                className="btn btn-secondary btn-sm"
+                title="Generate milestone invoice and UPI payment request"
+                style={{
+                  borderRadius: 20,
+                  padding: '8px 16px',
+                  gap: 6,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: '#a78bfa',
+                  borderColor: 'rgba(167, 139, 250, 0.4)',
+                  background: 'rgba(167, 139, 250, 0.08)',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                }}
+              >
+                🧾 Invoice & UPI
               </button>
 
               {/* Google Maps button */}
@@ -1665,6 +1692,15 @@ export default function LeadDetailPage() {
             fetchLead();
             setTab('timeline');
           }}
+        />
+      )}
+
+      {/* ── 7. Feature 4.3: Invoicing & Payment Tracker Modal ── */}
+      {showInvoiceModal && lead && (
+        <InvoiceModal
+          isOpen={showInvoiceModal}
+          onClose={() => setShowInvoiceModal(false)}
+          lead={lead}
         />
       )}
 

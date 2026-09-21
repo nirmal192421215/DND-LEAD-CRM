@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import GlobalSearch from './GlobalSearch';
 import NotificationBell from './NotificationBell';
+import PWAInstallButton from './PWAInstallButton';
 
 const TITLES: Record<string, { title: string; desc: string }> = {
   '/': { title: 'Dashboard', desc: 'Overview of your pipeline' },
@@ -42,6 +43,8 @@ export default function Topbar() {
       <GlobalSearch />
 
       <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <PWAInstallButton />
+
         <button
           onClick={toggleTheme}
           title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} mode`}
