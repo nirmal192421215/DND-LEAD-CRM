@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import type { Lead, AnalyticsOverview } from '@bind-build/shared';
-import { formatBudget, stageLabel } from '../lib/utils';
+import { formatBudget, stageLabel, cleanPhone, cleanWhatsAppPhone, format10DigitPhone, downloadLeadVCard, SOURCE_ICONS, SOURCE_COLORS, calculateLeadScore } from '../lib/utils';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import CreativeLoader from '../components/common/CreativeLoader';
 
 // ── Mini SVG Bar Chart ────────────────────────────────────────────────────────
@@ -78,10 +79,35 @@ interface UpcomingMeeting {
 export default function DashboardPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [analytics, setAnalytics] = useState<AnalyticsOverview | null>(null);
   const [recentLeads, setRecentLeads] = useState<Lead[]>([]);
+  const [allLeads, setAllLeads] = useState<Lead[]>([]);
   const [upcomingMeetings, setUpcomingMeetings] = useState<UpcomingMeeting[]>([]);
+  const [actionTab, setActionTab] = useState<'CALLBACKS' | 'HOT' | 'STALE'>('CALLBACKS');
+  const [activeNoteLeadId, setActiveNoteLeadId] = useState<string | null>(null);
+  const [quickNoteText, setQuickNoteText] = useState('');
+  const [savingNote, setSavingNote] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  const saveQuickNote = async (leadId: string) => {
+    if (!quickNoteText.trim()) return;
+    setSavingNote(true);
+    try {
+      await api.post('/notes', {
+        leadId,
+        text: quickNoteText.trim(),
+        pinned: false,
+      });
+      toast('Quick note saved! 📝', 'success');
+      setQuickNoteText('');
+      setActiveNoteLeadId(null);
+    } catch {
+      toast('Failed to save note', 'error');
+    } finally {
+      setSavingNote(false);
+    }
+  };
 
   useEffect(() => {
     const today = new Date();
@@ -89,11 +115,13 @@ export default function DashboardPage() {
 
     Promise.all([
       api.get('/analytics/overview'),
-      api.get('/leads?limit=5'),
+      api.get('/leads?limit=1000'),
       api.get(`/meetings?from=${today.toISOString()}&to=${weekLater.toISOString()}&limit=5`).catch(() => ({ data: { data: [] } })),
     ]).then(([analyticsRes, leadsRes, meetingsRes]) => {
       setAnalytics(analyticsRes.data.data);
-      setRecentLeads(leadsRes.data.data);
+      const leads = leadsRes.data.data ?? [];
+      setAllLeads(leads);
+      setRecentLeads(leads.slice(0, 5));
       setUpcomingMeetings(meetingsRes.data.data ?? []);
     }).finally(() => setLoading(false));
   }, []);
@@ -332,6 +360,237 @@ export default function DashboardPage() {
 
         {/* Right Column — Operational Tasks & Quick Workflows */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+          {/* ⚡ Today's Action Center & Follow-Up Tasks */}
+          {(() => {
+            const todayCallbacks = allLeads.filter((l) => l.stage === 'CALL_BACK' || Boolean(l.callBackAt));
+            const hotLeads = allLeads.filter((l) => l.priority === 'HOT' && !['WON', 'LOST'].includes(l.stage));
+            const staleLeads = allLeads.filter((l) => {
+              if (['WON', 'LOST'].includes(l.stage)) return false;
+              const daysOld = (Date.now() - new Date(l.updatedAt || l.createdAt).getTime()) / (1000 * 60 * 60 * 24);
+              return daysOld >= 3;
+            });
+
+            const activeList =
+              actionTab === 'CALLBACKS' ? todayCallbacks :
+              actionTab === 'HOT' ? hotLeads : staleLeads;
+
+            return (
+              <div className="card" style={{
+                border: '1px solid rgba(108, 99, 255, 0.3)',
+                background: 'linear-gradient(180deg, rgba(108, 99, 255, 0.04) 0%, var(--bg-card) 100%)',
+              }}>
+                <div className="flex-between mb-12">
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontSize: 16 }}>⚡</span>
+                      <div className="font-display font-bold text-md">Today's Action Center</div>
+                    </div>
+                    <div className="text-sm text-muted">Priority calls & scheduled follow-ups</div>
+                  </div>
+                  <button className="btn btn-secondary btn-sm" onClick={() => navigate('/leads')}>View Kanban</button>
+                </div>
+
+                {/* Tabs */}
+                <div style={{ display: 'flex', gap: 6, marginBottom: 12, overflowX: 'auto', paddingBottom: 2 }}>
+                  <button
+                    className="filter-chip"
+                    onClick={() => setActionTab('CALLBACKS')}
+                    style={{
+                      fontSize: 11,
+                      padding: '4px 10px',
+                      background: actionTab === 'CALLBACKS' ? 'rgba(245, 166, 35, 0.2)' : 'var(--bg-elevated)',
+                      color: actionTab === 'CALLBACKS' ? '#f5a623' : 'var(--text-secondary)',
+                      borderColor: actionTab === 'CALLBACKS' ? '#f5a623' : 'var(--border)',
+                      fontWeight: actionTab === 'CALLBACKS' ? 700 : 500,
+                    }}
+                  >
+                    ⏰ Callbacks ({todayCallbacks.length})
+                  </button>
+                  <button
+                    className="filter-chip"
+                    onClick={() => setActionTab('HOT')}
+                    style={{
+                      fontSize: 11,
+                      padding: '4px 10px',
+                      background: actionTab === 'HOT' ? 'rgba(255, 95, 126, 0.2)' : 'var(--bg-elevated)',
+                      color: actionTab === 'HOT' ? '#ff5f7e' : 'var(--text-secondary)',
+                      borderColor: actionTab === 'HOT' ? '#ff5f7e' : 'var(--border)',
+                      fontWeight: actionTab === 'HOT' ? 700 : 500,
+                    }}
+                  >
+                    🔥 Hot Leads ({hotLeads.length})
+                  </button>
+                  <button
+                    className="filter-chip"
+                    onClick={() => setActionTab('STALE')}
+                    style={{
+                      fontSize: 11,
+                      padding: '4px 10px',
+                      background: actionTab === 'STALE' ? 'rgba(56, 189, 248, 0.2)' : 'var(--bg-elevated)',
+                      color: actionTab === 'STALE' ? '#38bdf8' : 'var(--text-secondary)',
+                      borderColor: actionTab === 'STALE' ? '#38bdf8' : 'var(--border)',
+                      fontWeight: actionTab === 'STALE' ? 700 : 500,
+                    }}
+                  >
+                    ⏳ Follow-Up ({staleLeads.length})
+                  </button>
+                </div>
+
+                {/* List */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {activeList.slice(0, 4).map((lead) => {
+                    const leadScore = calculateLeadScore(lead);
+                    return (
+                      <div
+                        key={lead.id}
+                        style={{
+                          padding: '10px 12px',
+                          background: 'var(--bg-elevated)',
+                          borderRadius: 'var(--radius-md)',
+                          border: '1px solid var(--border)',
+                        }}
+                      >
+                        <div className="flex-between mb-4">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span style={{
+                              fontSize: 10, fontWeight: 700, fontFamily: 'var(--font-display)',
+                              color: 'var(--brand-light)', background: 'var(--brand-dim)',
+                              padding: '1px 6px', borderRadius: 4,
+                            }}>
+                              DND-{lead.serialNo?.toString().padStart(3, '0') ?? 'NEW'}
+                            </span>
+                            <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-primary)' }}>
+                              {lead.name}
+                            </span>
+                          </div>
+                          <span style={{
+                            fontSize: 10,
+                            fontWeight: 700,
+                            color: leadScore.color,
+                            background: 'rgba(0,0,0,0.2)',
+                            padding: '1px 5px',
+                            borderRadius: 6,
+                          }}>
+                            Score {leadScore.score}
+                          </span>
+                        </div>
+
+                        <div className="flex-between" style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8 }}>
+                          <span>{lead.projectType} · {lead.location}</span>
+                          {lead.phone && (
+                            <span style={{ fontFamily: 'monospace', color: 'var(--emerald)' }}>
+                              {format10DigitPhone(lead.phone)}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Quick action buttons */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          {lead.phone && (
+                            <a
+                              href={`tel:${cleanPhone(lead.phone)}`}
+                              className="btn btn-secondary btn-sm"
+                              style={{ padding: '3px 8px', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}
+                              onClick={() => {
+                                sessionStorage.setItem('active_call_start', Date.now().toString());
+                                sessionStorage.setItem('active_call_lead_id', lead.id);
+                                sessionStorage.setItem('active_call_lead_name', lead.name);
+                              }}
+                            >
+                              📞 Call
+                            </a>
+                          )}
+                          {lead.phone && (
+                            <a
+                              href={`https://wa.me/${cleanWhatsAppPhone(lead.phone)}?text=${encodeURIComponent(`Hi ${lead.name}, following up from DND Studio.`)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="btn btn-secondary btn-sm"
+                              style={{ padding: '3px 8px', fontSize: 11, color: '#25D366' }}
+                            >
+                              💬 WhatsApp
+                            </a>
+                          )}
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-sm"
+                            style={{ padding: '3px 8px', fontSize: 11 }}
+                            onClick={() => {
+                              downloadLeadVCard(lead);
+                              toast(`Saved ${lead.name} to mobile contacts! 📇`, 'success');
+                            }}
+                          >
+                            📇 Save
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-sm"
+                            style={{ padding: '3px 8px', fontSize: 11 }}
+                            onClick={() => {
+                              if (activeNoteLeadId === lead.id) setActiveNoteLeadId(null);
+                              else { setActiveNoteLeadId(lead.id); setQuickNoteText(''); }
+                            }}
+                          >
+                            📝 Note
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-ghost btn-sm"
+                            style={{ padding: '3px 6px', fontSize: 11, marginLeft: 'auto' }}
+                            onClick={() => navigate(`/leads/${lead.id}`)}
+                          >
+                            View ↗
+                          </button>
+                        </div>
+
+                        {/* Inline Note Composer */}
+                        {activeNoteLeadId === lead.id && (
+                          <div style={{ marginTop: 8, display: 'flex', gap: 6 }}>
+                            <input
+                              type="text"
+                              placeholder="Write note... (Press Enter)"
+                              value={quickNoteText}
+                              onChange={(e) => setQuickNoteText(e.target.value)}
+                              onKeyDown={async (e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  await saveQuickNote(lead.id);
+                                }
+                              }}
+                              autoFocus
+                              style={{
+                                flex: 1,
+                                background: 'var(--bg-card)',
+                                border: '1px solid var(--border)',
+                                borderRadius: 4,
+                                padding: '4px 8px',
+                                fontSize: 12,
+                                color: 'var(--text-primary)',
+                              }}
+                            />
+                            <button
+                              className="btn btn-primary btn-sm"
+                              disabled={savingNote || !quickNoteText.trim()}
+                              onClick={() => saveQuickNote(lead.id)}
+                              style={{ padding: '4px 8px', fontSize: 11 }}
+                            >
+                              Save
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {activeList.length === 0 && (
+                    <div style={{ textAlign: 'center', padding: '16px', color: 'var(--text-muted)', fontSize: 12 }}>
+                      🎉 All caught up! No pending items in this category.
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* 1. Recent Leads */}
           <div className="card">

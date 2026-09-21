@@ -60,6 +60,7 @@ export default function LeadsPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [filterCategory, setFilterCategory] = useState<'ALL' | 'INTERIOR' | 'RESTAURANT' | 'CONSTRUCTION' | 'INFRA'>('ALL');
+  const [filterSource, setFilterSource] = useState<string>('ALL');
   const [filterStage, setFilterStage] = useState<string>('');
   const [filterPriority, setFilterPriority] = useState<string>('');
   const [filterOwner, setFilterOwner] = useState<string>('ALL');
@@ -126,8 +127,9 @@ export default function LeadsPage() {
   };
 
   const displayedLeads = leads.filter((l) => {
-    if (filterCategory === 'ALL') return true;
-    return getCategoryOfLead(l) === filterCategory;
+    if (filterCategory !== 'ALL' && getCategoryOfLead(l) !== filterCategory) return false;
+    if (filterSource !== 'ALL' && l.source !== filterSource) return false;
+    return true;
   });
 
   const activeLeads = displayedLeads.filter((l) => !['WON', 'LOST'].includes(l.stage));
@@ -319,10 +321,23 @@ export default function LeadsPage() {
           </button>
         ))}
 
-        {(filterStage || filterPriority || filterOwner === 'ME' || filterCategory !== 'ALL') && (
+        <div style={{ width: 1, height: 20, background: 'var(--border)' }} />
+
+        {/* Source Filter Chips */}
+        {['Google', 'Instagram', 'Referral', 'Website', 'Direct'].map((s) => (
+          <button
+            key={s}
+            className={`filter-chip ${filterSource === s ? 'active' : ''}`}
+            onClick={() => setFilterSource(filterSource === s ? 'ALL' : s)}
+          >
+            {SOURCE_ICONS[s]} {s}
+          </button>
+        ))}
+
+        {(filterStage || filterPriority || filterOwner === 'ME' || filterCategory !== 'ALL' || filterSource !== 'ALL') && (
           <button
             className="btn btn-ghost btn-sm"
-            onClick={() => { setFilterStage(''); setFilterPriority(''); setFilterOwner('ALL'); setFilterCategory('ALL'); }}
+            onClick={() => { setFilterStage(''); setFilterPriority(''); setFilterOwner('ALL'); setFilterCategory('ALL'); setFilterSource('ALL'); }}
           >
             ✕ Clear
           </button>

@@ -50,6 +50,60 @@ export const SOURCE_ICONS: Record<string, string> = {
   WalkIn: '🚶',
 };
 
+export const SOURCE_COLORS: Record<string, { color: string; bg: string; border: string }> = {
+  Google: { color: '#38bdf8', bg: 'rgba(56, 189, 248, 0.12)', border: 'rgba(56, 189, 248, 0.3)' },
+  Instagram: { color: '#f43f5e', bg: 'rgba(244, 63, 94, 0.12)', border: 'rgba(244, 63, 94, 0.3)' },
+  Referral: { color: '#10d9a0', bg: 'rgba(16, 217, 160, 0.12)', border: 'rgba(16, 217, 160, 0.3)' },
+  Website: { color: '#a78bfa', bg: 'rgba(167, 139, 250, 0.12)', border: 'rgba(167, 139, 250, 0.3)' },
+  Direct: { color: '#f5a623', bg: 'rgba(245, 166, 35, 0.12)', border: 'rgba(245, 166, 35, 0.3)' },
+  WalkIn: { color: '#34d399', bg: 'rgba(52, 211, 153, 0.12)', border: 'rgba(52, 211, 153, 0.3)' },
+};
+
+/**
+ * Lead Score Algorithm (0-100)
+ * Evaluates priority, budget, phone validity, stage progress and win %
+ */
+export function calculateLeadScore(lead: {
+  priority?: string | null;
+  budgetLakhs?: number | null;
+  phone?: string | null;
+  stage?: string | null;
+  winProbability?: number | null;
+}): { score: number; level: 'HOT' | 'WARM' | 'COLD'; label: string; color: string } {
+  let score = 0;
+  // Priority factor (up to 35 pts)
+  if (lead.priority === 'HOT') score += 35;
+  else if (lead.priority === 'WARM') score += 20;
+  else score += 10;
+
+  // Budget factor (up to 25 pts)
+  const budget = lead.budgetLakhs || 0;
+  if (budget >= 50) score += 25;
+  else if (budget >= 25) score += 20;
+  else if (budget >= 15) score += 15;
+  else if (budget >= 5) score += 10;
+  else score += 5;
+
+  // Valid 10-digit phone (15 pts)
+  if (cleanPhone(lead.phone).length === 10) score += 15;
+
+  // Stage factor (up to 15 pts)
+  if (lead.stage === 'WON') score += 15;
+  else if (lead.stage === 'NEGOTIATION' || lead.stage === 'PROPOSAL') score += 12;
+  else if (lead.stage === 'MEETING') score += 10;
+  else if (lead.stage === 'CALL_BACK' || lead.stage === 'CONTACTED') score += 7;
+  else score += 4;
+
+  // Win probability factor (up to 10 pts)
+  if (lead.winProbability) score += Math.round((lead.winProbability / 100) * 10);
+
+  score = Math.min(100, Math.max(0, score));
+
+  if (score >= 75) return { score, level: 'HOT', label: 'High Potential', color: '#ff5f7e' };
+  if (score >= 45) return { score, level: 'WARM', label: 'Medium Lead', color: '#f5a623' };
+  return { score, level: 'COLD', label: 'Developing', color: '#38bdf8' };
+}
+
 /**
  * Returns a clean 10-digit phone number without 91, +91, 0, spaces or symbols
  */

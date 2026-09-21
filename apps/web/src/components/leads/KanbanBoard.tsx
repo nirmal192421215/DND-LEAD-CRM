@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Lead } from '@bind-build/shared';
-import { formatBudget, stageLabel, STAGE_ORDER, SOURCE_ICONS, cleanPhone, cleanWhatsAppPhone, format10DigitPhone, downloadLeadVCard } from '../../lib/utils';
+import { formatBudget, stageLabel, STAGE_ORDER, SOURCE_ICONS, SOURCE_COLORS, calculateLeadScore, cleanPhone, cleanWhatsAppPhone, format10DigitPhone, downloadLeadVCard } from '../../lib/utils';
 import api from '../../lib/api';
 import { useToast } from '../../context/ToastContext';
 import LiveCallDialerModal from './LiveCallDialerModal';
@@ -30,6 +30,29 @@ export default function KanbanBoard({ leads, onLeadMoved }: Props) {
   const [dragOverLeadId, setDragOverLeadId] = useState<string | null>(null);
   const [movingId, setMovingId] = useState<string | null>(null);
   const [callingLead, setCallingLead] = useState<Lead | null>(null);
+  const [activeNoteLeadId, setActiveNoteLeadId] = useState<string | null>(null);
+  const [quickNoteText, setQuickNoteText] = useState('');
+  const [savingNote, setSavingNote] = useState(false);
+
+  const saveQuickNote = async (leadId: string) => {
+    if (!quickNoteText.trim()) return;
+    setSavingNote(true);
+    try {
+      await api.post('/notes', {
+        leadId,
+        text: quickNoteText.trim(),
+        pinned: false,
+      });
+      toast('Quick note added to lead! 📝', 'success');
+      setQuickNoteText('');
+      setActiveNoteLeadId(null);
+      onLeadMoved();
+    } catch {
+      toast('Failed to save note', 'error');
+    } finally {
+      setSavingNote(false);
+    }
+  };
 
   // Automatic Call Detection when user switches back from phone dialer
   useEffect(() => {
@@ -207,65 +230,103 @@ export default function KanbanBoard({ leads, onLeadMoved }: Props) {
                 </div>
               )}
 
-              {cols.map((lead) => (
-                <div key={lead.id}>
-                  {/* Drop indicator above card when dragging over it */}
-                  {dragOverLeadId === lead.id && draggingId.current !== lead.id && (
-                    <div style={{
-                      height: 3, borderRadius: 2,
-                      background: STAGE_COLORS[stage],
-                      margin: '0 0 6px',
-                      animation: 'none',
-                    }} />
-                  )}
+              {cols.map((lead) => {
+                const leadScore = calculateLeadScore(lead);
+                const srcStyle = SOURCE_COLORS[lead.source] || { color: '#8b92a8', bg: 'rgba(255,255,255,0.05)', border: 'var(--border)' };
 
-                  <div
-                    id={`lead-card-${lead.id}`}
-                    className="lead-card"
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, lead.id)}
-                    onDragEnd={(e) => handleDragEnd(e, lead.id)}
-                    onDragOver={(e) => { e.stopPropagation(); handleDragOver(e, stage, lead.id); }}
-                    onClick={() => navigate(`/leads/${lead.id}`)}
-                    style={{
-                      cursor: movingId === lead.id ? 'wait' : 'grab',
-                      opacity: movingId === lead.id ? 0.6 : 1,
-                      transition: 'opacity 150ms, transform 150ms, box-shadow 150ms',
-                      userSelect: 'none',
-                    }}
-                  >
-                    {/* Moving spinner */}
-                    {movingId === lead.id && (
-                      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6 }}>
-                        <div className="spinner" style={{ width: 14, height: 14 }} />
-                      </div>
-                    )}
+                return (
+                      <div key={lead.id}>
+                        {/* Drop indicator above card when dragging over it */}
+                        {dragOverLeadId === lead.id && draggingId.current !== lead.id && (
+                          <div style={{
+                            height: 3, borderRadius: 2,
+                            background: STAGE_COLORS[stage],
+                            margin: '0 0 6px',
+                            animation: 'none',
+                          }} />
+                        )}
 
-                    <div className="lead-card-header">
-                      <div>
-                        <div className="lead-card-name">{lead.name}</div>
-                        <div className="lead-card-type">{lead.projectType}</div>
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-                        <span style={{
-                          fontSize: 10, fontWeight: 700, fontFamily: 'var(--font-display)',
-                          color: 'var(--brand-light)', background: 'var(--brand-dim)',
-                          padding: '1px 6px', borderRadius: 4, border: '1px solid rgba(108,99,255,0.2)',
-                        }}>
-                          DND-{lead.serialNo?.toString().padStart(3, '0') ?? 'NEW'}
-                        </span>
-                        <span className={`priority-badge priority-${lead.priority}`}>
-                          {lead.priority === 'HOT' ? '🔥' : lead.priority === 'WARM' ? '🌤' : '❄️'}
-                        </span>
-                      </div>
-                    </div>
+                        <div
+                          id={`lead-card-${lead.id}`}
+                          className="lead-card"
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, lead.id)}
+                          onDragEnd={(e) => handleDragEnd(e, lead.id)}
+                          onDragOver={(e) => { e.stopPropagation(); handleDragOver(e, stage, lead.id); }}
+                          onClick={() => navigate(`/leads/${lead.id}`)}
+                          style={{
+                            cursor: movingId === lead.id ? 'wait' : 'grab',
+                            opacity: movingId === lead.id ? 0.6 : 1,
+                            transition: 'opacity 150ms, transform 150ms, box-shadow 150ms',
+                            userSelect: 'none',
+                          }}
+                        >
+                          {/* Moving spinner */}
+                          {movingId === lead.id && (
+                            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6 }}>
+                              <div className="spinner" style={{ width: 14, height: 14 }} />
+                            </div>
+                          )}
 
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
-                      <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>📍 {lead.location}</span>
-                      <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                        {SOURCE_ICONS[lead.source]} {lead.source}
-                      </span>
-                    </div>
+                          <div className="lead-card-header">
+                            <div>
+                              <div className="lead-card-name">{lead.name}</div>
+                              <div className="lead-card-type">{lead.projectType}</div>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                <span style={{
+                                  fontSize: 10, fontWeight: 700, fontFamily: 'var(--font-display)',
+                                  color: 'var(--brand-light)', background: 'var(--brand-dim)',
+                                  padding: '1px 6px', borderRadius: 4, border: '1px solid rgba(108,99,255,0.2)',
+                                }}>
+                                  DND-{lead.serialNo?.toString().padStart(3, '0') ?? 'NEW'}
+                                </span>
+                                <span className={`priority-badge priority-${lead.priority}`}>
+                                  {lead.priority === 'HOT' ? '🔥' : lead.priority === 'WARM' ? '🌤' : '❄️'}
+                                </span>
+                              </div>
+                              {/* Lead Score Badge */}
+                              <div
+                                title={`Lead Score: ${leadScore.score}/100 (${leadScore.label})`}
+                                style={{
+                                  fontSize: 9,
+                                  fontWeight: 700,
+                                  color: leadScore.color,
+                                  background: 'rgba(0,0,0,0.3)',
+                                  border: `1px solid ${leadScore.color}40`,
+                                  padding: '1px 5px',
+                                  borderRadius: 8,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 3,
+                                }}
+                              >
+                                <span style={{ width: 4, height: 4, borderRadius: '50%', background: leadScore.color }} />
+                                Score {leadScore.score}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>📍 {lead.location}</span>
+                            <span
+                              style={{
+                                fontSize: 10,
+                                fontWeight: 600,
+                                color: srcStyle.color,
+                                background: srcStyle.bg,
+                                border: `1px solid ${srcStyle.border}`,
+                                padding: '1px 6px',
+                                borderRadius: 8,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 3,
+                              }}
+                            >
+                              {SOURCE_ICONS[lead.source]} {lead.source}
+                            </span>
+                          </div>
 
                     <div className="flex-between">
                       <div className="lead-card-budget">{formatBudget(lead.budgetLakhs)}</div>
@@ -504,6 +565,47 @@ export default function KanbanBoard({ leads, onLeadMoved }: Props) {
                         📇
                       </button>
 
+                      {/* Quick Note Button */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (activeNoteLeadId === lead.id) {
+                            setActiveNoteLeadId(null);
+                          } else {
+                            setActiveNoteLeadId(lead.id);
+                            setQuickNoteText('');
+                          }
+                        }}
+                        title="Add Quick Note to Lead"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: 28,
+                          height: 28,
+                          borderRadius: 8,
+                          background: activeNoteLeadId === lead.id ? 'var(--brand-dim)' : 'var(--bg-elevated)',
+                          border: activeNoteLeadId === lead.id ? '1px solid var(--brand)' : '1px solid var(--border)',
+                          color: activeNoteLeadId === lead.id ? 'var(--brand-light)' : 'var(--text-secondary)',
+                          cursor: 'pointer',
+                          transition: 'all 150ms',
+                          fontSize: 12,
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.color = 'var(--brand-light)';
+                          e.currentTarget.style.borderColor = 'var(--brand)';
+                        }}
+                        onMouseLeave={(e) => {
+                          if (activeNoteLeadId !== lead.id) {
+                            e.currentTarget.style.color = 'var(--text-secondary)';
+                            e.currentTarget.style.borderColor = 'var(--border)';
+                          }
+                        }}
+                      >
+                        📝
+                      </button>
+
                       {/* Google Maps Icon */}
                       {lead.projectDescription?.includes('http') && (
                         <a
@@ -531,6 +633,65 @@ export default function KanbanBoard({ leads, onLeadMoved }: Props) {
                       )}
                     </div>
 
+                    {/* Inline Quick Note Input Box */}
+                    {activeNoteLeadId === lead.id && (
+                      <div
+                        style={{
+                          marginTop: 8,
+                          padding: '8px',
+                          background: 'rgba(0, 0, 0, 0.4)',
+                          borderRadius: 8,
+                          border: '1px solid var(--brand-dim)',
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <input
+                            type="text"
+                            placeholder="Add quick note... (Press Enter)"
+                            value={quickNoteText}
+                            onChange={(e) => setQuickNoteText(e.target.value)}
+                            onKeyDown={async (e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                await saveQuickNote(lead.id);
+                              } else if (e.key === 'Escape') {
+                                setActiveNoteLeadId(null);
+                              }
+                            }}
+                            autoFocus
+                            style={{
+                              flex: 1,
+                              background: 'var(--bg-elevated)',
+                              border: '1px solid var(--border)',
+                              borderRadius: 6,
+                              padding: '5px 8px',
+                              color: 'var(--text-primary)',
+                              fontSize: 12,
+                              outline: 'none',
+                            }}
+                          />
+                          <button
+                            type="button"
+                            disabled={savingNote || !quickNoteText.trim()}
+                            onClick={() => saveQuickNote(lead.id)}
+                            className="btn btn-primary btn-sm"
+                            style={{ padding: '4px 8px', fontSize: 11 }}
+                          >
+                            {savingNote ? '...' : 'Save'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setActiveNoteLeadId(null)}
+                            className="btn btn-ghost btn-sm"
+                            style={{ padding: '4px 6px', fontSize: 11 }}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Drag handle hint */}
                     <div style={{
                       position: 'absolute', top: 8, right: 8,
@@ -538,11 +699,11 @@ export default function KanbanBoard({ leads, onLeadMoved }: Props) {
                       color: 'var(--text-muted)', fontSize: 12,
                       pointerEvents: 'none',
                     }} className="drag-handle">
-                      ⠿
                     </div>
                   </div>
                 </div>
-              ))}
+              );
+            })}
 
               {/* Bottom drop zone */}
               {cols.length > 0 && isOver && (
