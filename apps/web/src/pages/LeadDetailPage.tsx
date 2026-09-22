@@ -614,8 +614,8 @@ export default function LeadDetailPage() {
         </div>
 
         {/* ── Interactive Stepper Bar (Stage Progress Tracker) ─────────────── */}
-        <div className="card" style={{ padding: '20px 24px' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <div className="card" style={{ padding: '16px 18px', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', minWidth: 620, paddingBottom: 4 }}>
 
             {/* Steps */}
             {STEPPER_STAGES.map((step, idx) => {
@@ -626,12 +626,17 @@ export default function LeadDetailPage() {
               return (
                 <div
                   key={step.key}
-                  style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}
+                  style={{
+                    flex: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    position: 'relative',
+                  }}
                 >
-                  {/* Top Line & Circle Row */}
-                  <div style={{ display: 'flex', alignItems: 'center', width: '100%', position: 'relative' }}>
-
-                    {/* Left half-line connecting to previous step */}
+                  {/* Step Connecting Lines + Circle Node */}
+                  <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                    {/* Left half-line connecting from previous step */}
                     <div style={{
                       flex: 1, height: 2,
                       background: idx <= currentStageIndex ? 'var(--brand)' : 'var(--border-strong)',
@@ -688,14 +693,14 @@ export default function LeadDetailPage() {
         <div
           className="card"
           style={{
-            padding: '18px 22px',
+            padding: '16px 18px',
             background: 'linear-gradient(135deg, rgba(108,99,255,0.08) 0%, rgba(56,189,248,0.06) 100%)',
             border: '1px solid rgba(108,99,255,0.22)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             flexWrap: 'wrap',
-            gap: 16,
+            gap: 14,
           }}
         >
           <div>
@@ -729,7 +734,7 @@ export default function LeadDetailPage() {
           </div>
 
           {/* Quick Action Decision Triggers */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <div className="lead-quick-actions" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <button
               type="button"
               onClick={handleInitiatePhoneCall}

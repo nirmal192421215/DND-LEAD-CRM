@@ -273,12 +273,13 @@ export default function WhatsAppTemplatesModal({ lead, onClose, onSent }: Props)
         {/* Modal Body */}
         <div
           style={{
-            padding: '16px 20px',
+            padding: '14px 16px',
             overflowY: 'auto',
             display: 'flex',
             flexDirection: 'column',
-            gap: 16,
+            gap: 14,
             flex: 1,
+            WebkitOverflowScrolling: 'touch',
           }}
         >
           {/* Template Selection Cards */}
@@ -289,6 +290,8 @@ export default function WhatsAppTemplatesModal({ lead, onClose, onSent }: Props)
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 marginBottom: 8,
+                flexWrap: 'wrap',
+                gap: 4,
               }}
             >
               <span
@@ -303,14 +306,14 @@ export default function WhatsAppTemplatesModal({ lead, onClose, onSent }: Props)
                 Select High-Converting Architectural Pitch:
               </span>
               <span style={{ fontSize: '0.72rem', color: '#25D366' }}>
-                ✓ Tailored for Architecture & Interiors
+                ✓ Architecture & Interiors
               </span>
             </div>
 
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
                 gap: 8,
               }}
             >
@@ -324,8 +327,8 @@ export default function WhatsAppTemplatesModal({ lead, onClose, onSent }: Props)
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 10,
-                      padding: '10px 12px',
+                      gap: 8,
+                      padding: '8px 10px',
                       borderRadius: 10,
                       background: isSelected
                         ? 'linear-gradient(135deg, rgba(37, 211, 102, 0.16) 0%, rgba(18, 140, 126, 0.1) 100%)'
@@ -335,14 +338,14 @@ export default function WhatsAppTemplatesModal({ lead, onClose, onSent }: Props)
                       cursor: 'pointer',
                       textAlign: 'left',
                       transition: 'all 150ms ease',
-                      position: 'relative',
+                      minHeight: 44,
                     }}
                   >
-                    <span style={{ fontSize: '1.25rem', flexShrink: 0 }}>{tmpl.icon}</span>
+                    <span style={{ fontSize: '1.2rem', flexShrink: 0 }}>{tmpl.icon}</span>
                     <div style={{ minWidth: 0, flex: 1 }}>
                       <div
                         style={{
-                          fontSize: '0.82rem',
+                          fontSize: '0.78rem',
                           fontWeight: isSelected ? 700 : 600,
                           color: isSelected ? '#25D366' : 'var(--text-primary)',
                           whiteSpace: 'nowrap',
@@ -354,16 +357,16 @@ export default function WhatsAppTemplatesModal({ lead, onClose, onSent }: Props)
                       </div>
                       <div
                         style={{
-                          fontSize: '0.68rem',
+                          fontSize: '0.66rem',
                           color: 'var(--text-muted)',
-                          marginTop: 2,
+                          marginTop: 1,
                         }}
                       >
                         {tmpl.tag}
                       </div>
                     </div>
                     {isSelected && (
-                      <span style={{ color: '#25D366', fontSize: '0.9rem', fontWeight: 700 }}>✓</span>
+                      <span style={{ color: '#25D366', fontSize: '0.85rem', fontWeight: 700 }}>✓</span>
                     )}
                   </button>
                 );
@@ -375,18 +378,27 @@ export default function WhatsAppTemplatesModal({ lead, onClose, onSent }: Props)
           <div
             style={{
               display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexWrap: 'wrap',
+              flexDirection: 'column',
               gap: 8,
-              padding: '6px 12px',
+              padding: '8px 10px',
               background: 'rgba(0, 0, 0, 0.3)',
               borderRadius: 8,
               border: '1px solid rgba(255, 255, 255, 0.05)',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                overflowX: 'auto',
+                whiteSpace: 'nowrap',
+                paddingBottom: 2,
+                WebkitOverflowScrolling: 'touch',
+                scrollbarWidth: 'none',
+              }}
+            >
+              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600, flexShrink: 0 }}>
                 Insert Variable:
               </span>
               {[
@@ -402,28 +414,27 @@ export default function WhatsAppTemplatesModal({ lead, onClose, onSent }: Props)
                   onClick={() => handleInsertVariable(pill.val)}
                   style={{
                     fontSize: '0.72rem',
-                    padding: '2px 8px',
+                    padding: '3px 8px',
                     borderRadius: 6,
                     background: 'rgba(255, 255, 255, 0.06)',
                     border: '1px solid rgba(255, 255, 255, 0.12)',
                     color: 'var(--text-secondary)',
                     cursor: 'pointer',
-                    transition: 'all 120ms',
+                    flexShrink: 0,
+                    minHeight: 28,
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = '#25D366')}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-secondary)')}
                 >
                   {pill.label}
                 </button>
               ))}
             </div>
 
-            <div style={{ display: 'flex', gap: 4 }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
               <button
                 type="button"
                 onClick={() => setActiveTab('editor')}
                 style={{
-                  padding: '4px 10px',
+                  padding: '5px 12px',
                   fontSize: '0.74rem',
                   fontWeight: activeTab === 'editor' ? 700 : 500,
                   borderRadius: 6,
@@ -439,7 +450,7 @@ export default function WhatsAppTemplatesModal({ lead, onClose, onSent }: Props)
                 type="button"
                 onClick={() => setActiveTab('preview')}
                 style={{
-                  padding: '4px 10px',
+                  padding: '5px 12px',
                   fontSize: '0.74rem',
                   fontWeight: activeTab === 'preview' ? 700 : 500,
                   borderRadius: 6,
@@ -586,11 +597,13 @@ export default function WhatsAppTemplatesModal({ lead, onClose, onSent }: Props)
           className="modal-footer"
           style={{
             borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-            padding: '14px 20px',
+            padding: '12px 16px',
             background: 'rgba(15, 23, 42, 0.7)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 10,
           }}
         >
           <button
@@ -599,27 +612,29 @@ export default function WhatsAppTemplatesModal({ lead, onClose, onSent }: Props)
             onClick={onClose}
             disabled={isSending}
             style={{
-              padding: '10px 18px',
-              fontSize: '0.86rem',
+              padding: '8px 16px',
+              fontSize: '0.84rem',
               borderRadius: 8,
+              minHeight: 40,
             }}
           >
             Cancel
           </button>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: '1 1 auto', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
             <button
               type="button"
               onClick={handleCopyMessage}
               style={{
-                padding: '10px 16px',
-                fontSize: '0.86rem',
+                padding: '8px 14px',
+                fontSize: '0.84rem',
                 borderRadius: 8,
                 background: 'rgba(255, 255, 255, 0.06)',
                 border: '1px solid rgba(255, 255, 255, 0.12)',
                 color: 'var(--text-secondary)',
                 cursor: 'pointer',
                 fontWeight: 600,
+                minHeight: 40,
               }}
             >
               {copied ? '✓ Copied' : '📋 Copy Text'}
@@ -630,19 +645,22 @@ export default function WhatsAppTemplatesModal({ lead, onClose, onSent }: Props)
               onClick={handleSendWhatsApp}
               disabled={isSending || !message.trim()}
               style={{
-                padding: '10px 22px',
-                fontSize: '0.9rem',
+                padding: '8px 18px',
+                fontSize: '0.88rem',
                 fontWeight: 700,
                 borderRadius: 8,
                 background: 'linear-gradient(135deg, #25D366 0%, #1da851 100%)',
                 border: 'none',
                 color: '#ffffff',
                 cursor: 'pointer',
-                display: 'flex',
+                display: 'inline-flex',
                 alignItems: 'center',
+                justifyContent: 'center',
                 gap: 8,
                 boxShadow: '0 4px 18px rgba(37, 211, 102, 0.4)',
                 transition: 'all 150ms ease',
+                minHeight: 40,
+                flex: '1 1 auto',
               }}
               onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-1px)')}
               onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
