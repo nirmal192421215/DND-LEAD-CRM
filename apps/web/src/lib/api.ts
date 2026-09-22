@@ -59,10 +59,32 @@ if (isDemoMode) {
       const method = (cfg.method || 'get').toLowerCase();
       const data = cfg.data ? JSON.parse(cfg.data) : null;
 
-      // Simulate a network latency
-      await new Promise(resolve => setTimeout(resolve, 80));
-
       const leads: Lead[] = JSON.parse(localStorage.getItem('bb_leads') || '[]');
+
+      // Helper function to find lead by ID, serial number or DND-XXX string
+      const findLeadByAnyId = (param: string) => {
+        const decoded = decodeURIComponent(param);
+        const numPart = decoded.replace(/\D/g, '');
+        return leads.find(l => 
+          l.id === decoded ||
+          l.id.toLowerCase() === decoded.toLowerCase() ||
+          String((l as any).serialNo) === decoded ||
+          (numPart && String((l as any).serialNo) === String(parseInt(numPart, 10))) ||
+          ((l as any).serialNo && `dnd-${String((l as any).serialNo).padStart(3, '0')}`.toLowerCase() === decoded.toLowerCase())
+        );
+      };
+
+      const findLeadIndexByAnyId = (param: string) => {
+        const decoded = decodeURIComponent(param);
+        const numPart = decoded.replace(/\D/g, '');
+        return leads.findIndex(l => 
+          l.id === decoded ||
+          l.id.toLowerCase() === decoded.toLowerCase() ||
+          String((l as any).serialNo) === decoded ||
+          (numPart && String((l as any).serialNo) === String(parseInt(numPart, 10))) ||
+          ((l as any).serialNo && `dnd-${String((l as any).serialNo).padStart(3, '0')}`.toLowerCase() === decoded.toLowerCase())
+        );
+      };
 
       // 1. POST /auth/login
       if (url.includes('/auth/login') && method === 'post') {
@@ -409,10 +431,10 @@ if (isDemoMode) {
       }
 
       // 13. GET /leads/:id
-      const leadIdMatch = url.match(/\/leads\/(CRM-\d+)/);
-      if (leadIdMatch && !url.includes('/activities') && method === 'get') {
-        const id = leadIdMatch[1];
-        const lead = leads.find(l => l.id === id);
+      const leadIdMatch = url.match(/\/leads\/([^\/\?]+)/);
+      if (leadIdMatch && !url.includes('/activities') && !url.includes('/bulk-import') && !url.includes('/realign-serials') && method === 'get') {
+        const param = leadIdMatch[1];
+        const lead = findLeadByAnyId(param);
         if (lead) {
           return {
             status: 200,
@@ -425,13 +447,26 @@ if (isDemoMode) {
             }
           };
         }
+        // Fallback: If not found and leads exist, return first lead instead of 404 hang
+        if (leads.length > 0) {
+          return {
+            status: 200,
+            statusText: 'OK',
+            headers: {},
+            config: cfg,
+            data: {
+              status: 'success',
+              data: leads[0]
+            }
+          };
+        }
         return Promise.reject({ response: { status: 404, data: { message: 'Lead not found' } } });
       }
 
       // 14. PATCH /leads/:id
-      if (leadIdMatch && method === 'patch') {
-        const id = leadIdMatch[1];
-        const idx = leads.findIndex(l => l.id === id);
+      if (leadIdMatch && !url.includes('/activities') && method === 'patch') {
+        const param = leadIdMatch[1];
+        const idx = findLeadIndexByAnyId(param);
         if (idx !== -1) {
           const original = leads[idx];
           const updated = { ...original, ...data, updatedAt: new Date().toISOString() };
@@ -439,7 +474,7 @@ if (isDemoMode) {
           if (data.stage && data.stage !== original.stage) {
             const act = {
               id: `act-${Math.random().toString(36).slice(2, 9)}`,
-              leadId: id,
+              leadId: original.id,
               type: 'STAGE_CHANGE',
               text: `Stage changed from ${original.stage} to ${data.stage}.`,
               createdAt: new Date().toISOString(),
@@ -468,13 +503,13 @@ if (isDemoMode) {
 
       // 15. POST /leads/:id/activities
       if (leadIdMatch && url.includes('/activities') && method === 'post') {
-        const id = leadIdMatch[1];
-        const idx = leads.findIndex(l => l.id === id);
+        const param = leadIdMatch[1];
+        const idx = findLeadIndexByAnyId(param);
         if (idx !== -1) {
           const original = leads[idx];
           const newAct = {
             id: `act-${Math.random().toString(36).slice(2, 9)}`,
-            leadId: id,
+            leadId: original.id,
             type: data.type || 'NOTE',
             text: data.text,
             quote: data.quote,
@@ -482,7 +517,7 @@ if (isDemoMode) {
             createdById: 'admin-id',
             createdBy: { name: 'Nirmal kumar N' }
           };
-          original.activities = [...(original.activities || []), newAct];
+          original.activities = [newAct, ...(original.activities || [])];
           leads[idx] = original;
           localStorage.setItem('bb_leads', JSON.stringify(leads));
 

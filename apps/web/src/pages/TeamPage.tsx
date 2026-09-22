@@ -78,7 +78,7 @@ export default function TeamPage() {
     } catch { toast('Failed to update role', 'error'); }
   };
 
-  if (loading) return <CreativeLoader />;
+  if (loading) return <CreativeLoader title="DND STUDIO" subtitle="Loading Team Members..." />;
 
   return (
     <div style={{ maxWidth: 740, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 20 }}>

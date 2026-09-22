@@ -127,7 +127,7 @@ export default function DashboardPage() {
     }).finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <CreativeLoader />;
+  if (loading) return <CreativeLoader title="DND STUDIO" subtitle="Loading Pipeline Dashboard..." />;
 
   const kpis = [
     {

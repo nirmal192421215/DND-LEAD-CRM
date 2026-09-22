@@ -258,17 +258,32 @@ leadsRouter.post('/bulk-import', async (req: AuthRequest, res: Response) => {
 
 // GET /api/leads/:id
 leadsRouter.get('/:id', async (req: AuthRequest, res: Response) => {
-  const lead = await prisma.lead.findUnique({
-    where: { id: req.params['id'] },
-    include: {
-      owner: { select: { id: true, name: true, email: true, role: true, initials: true, avatar: true } },
-      activities: { include: { createdBy: { select: { id: true, name: true, initials: true } } }, orderBy: { createdAt: 'desc' } },
-      notes: { include: { createdBy: { select: { id: true, name: true, initials: true } } }, orderBy: [{ pinned: 'desc' }, { createdAt: 'desc' }] },
-      meetings: { include: { createdBy: { select: { id: true, name: true, initials: true } } }, orderBy: { scheduledAt: 'asc' } },
-      fileAssets: { include: { uploadedBy: { select: { id: true, name: true, initials: true } } }, orderBy: { createdAt: 'desc' } },
-      proposal: true,
-    },
+  const param = req.params['id'];
+  const includeOptions = {
+    owner: { select: { id: true, name: true, email: true, role: true, initials: true, avatar: true } },
+    activities: { include: { createdBy: { select: { id: true, name: true, initials: true } } }, orderBy: { createdAt: 'desc' as const } },
+    notes: { include: { createdBy: { select: { id: true, name: true, initials: true } } }, orderBy: [{ pinned: 'desc' as const }, { createdAt: 'desc' as const }] },
+    meetings: { include: { createdBy: { select: { id: true, name: true, initials: true } } }, orderBy: { scheduledAt: 'asc' as const } },
+    fileAssets: { include: { uploadedBy: { select: { id: true, name: true, initials: true } } }, orderBy: { createdAt: 'desc' as const } },
+    proposal: true,
+  };
+
+  let lead = await prisma.lead.findUnique({
+    where: { id: param },
+    include: includeOptions,
   });
+
+  // If not found by primary key ID, lookup by serialNo (handles e.g. "1", "001", "DND-001")
+  if (!lead) {
+    const numericPart = param.replace(/\D/g, '');
+    if (numericPart) {
+      const serialNum = parseInt(numericPart, 10);
+      lead = await prisma.lead.findFirst({
+        where: { serialNo: serialNum },
+        include: includeOptions,
+      });
+    }
+  }
 
   if (!lead) { res.status(404).json({ success: false, error: 'Lead not found' }); return; }
   const parsed = { ...lead, tags: JSON.parse((lead as Record<string, unknown>)['tags'] as string ?? '[]') };
@@ -316,12 +331,25 @@ function stageLabel(s: string): string {
 // PATCH /api/leads/:id
 leadsRouter.patch('/:id', async (req: AuthRequest, res: Response) => {
   const body = UpdateLeadSchema.parse(req.body);
-  const existing = await prisma.lead.findUnique({
-    where: { id: req.params['id'] },
-    select: { stage: true, name: true, ownerId: true },
+  const param = req.params['id'];
+  let existing = await prisma.lead.findUnique({
+    where: { id: param },
+    select: { id: true, stage: true, name: true, ownerId: true },
   });
+
+  if (!existing) {
+    const numericPart = param.replace(/\D/g, '');
+    if (numericPart) {
+      existing = await prisma.lead.findFirst({
+        where: { serialNo: parseInt(numericPart, 10) },
+        select: { id: true, stage: true, name: true, ownerId: true },
+      });
+    }
+  }
+
   if (!existing) { res.status(404).json({ success: false, error: 'Lead not found' }); return; }
 
+  const targetLeadId = existing.id;
   const data: Record<string, unknown> = { ...body };
   const stageChanged = body.stage && body.stage !== existing.stage;
   if (stageChanged) {
@@ -329,13 +357,13 @@ leadsRouter.patch('/:id', async (req: AuthRequest, res: Response) => {
     if (body.stage === 'WON') data['wonAt'] = new Date();
   }
 
-  const lead = await prisma.lead.update({ where: { id: req.params['id'] }, data, select: LEAD_SELECT });
+  const lead = await prisma.lead.update({ where: { id: targetLeadId }, data, select: LEAD_SELECT });
 
   // Auto-log activity on stage change
   if (stageChanged) {
     await prisma.activity.create({
       data: {
-        leadId: req.params['id'],
+        leadId: targetLeadId,
         type: 'STAGE_CHANGE',
         text: `Stage changed from ${stageLabel(existing.stage)} → ${stageLabel(body.stage!)}`,
         createdById: req.user!.userId,

@@ -135,7 +135,7 @@ export default function LeadsPage() {
   const activeLeads = displayedLeads.filter((l) => !['WON', 'LOST'].includes(l.stage));
   const pipelineValue = activeLeads.reduce((a, l) => a + l.budgetLakhs, 0);
 
-  if (loading) return <CreativeLoader />;
+  if (loading) return <CreativeLoader title="DND STUDIO" subtitle="Loading Pipeline Board..." />;
 
   return (
     <div>

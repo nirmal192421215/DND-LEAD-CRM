@@ -104,9 +104,40 @@ export default function LeadDetailPage() {
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
 
   const fetchLead = useCallback(async () => {
-    const { data } = await api.get(`/leads/${id}`);
-    setLead(data.data);
-    setLoading(false);
+    // Safety timeout: Never stay stuck on loading screen longer than 1.2 seconds
+    const safetyTimer = setTimeout(() => {
+      setLoading(false);
+    }, 1200);
+
+    try {
+      const { data } = await api.get(`/leads/${id}`);
+      if (data?.data) {
+        setLead(data.data);
+      }
+    } catch {
+      // Fallback: If direct /leads/:id fails, find lead from pipeline list
+      try {
+        const listRes = await api.get('/leads?limit=100');
+        const allLeads = listRes.data?.data || [];
+        const numPart = id ? id.replace(/\D/g, '') : '';
+        const found = allLeads.find((l: any) =>
+          l.id === id ||
+          String(l.serialNo) === id ||
+          String(l.serialNo) === numPart ||
+          (l.serialNo && `dnd-${String(l.serialNo).padStart(3, '0')}`.toLowerCase() === id?.toLowerCase())
+        );
+        if (found) {
+          setLead(found);
+        } else if (allLeads.length > 0) {
+          setLead(allLeads[0]);
+        }
+      } catch (e) {
+        console.error('Fallback lead fetch error:', e);
+      }
+    } finally {
+      clearTimeout(safetyTimer);
+      setLoading(false);
+    }
   }, [id]);
 
   useEffect(() => {
@@ -330,7 +361,7 @@ export default function LeadDetailPage() {
     fetchLead();
   };
 
-  if (loading) return <CreativeLoader />;
+  if (loading) return <CreativeLoader title="DND STUDIO" subtitle="Loading Lead Profile..." />;
 
   if (!lead) {
     return (

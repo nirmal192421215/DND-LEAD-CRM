@@ -63,7 +63,7 @@ export default function PublicProposalPage() {
     }
   };
 
-  if (loading) return <CreativeLoader />;
+  if (loading) return <CreativeLoader title="DND STUDIO" subtitle="Loading Client Proposal..." />;
 
   if (error || !proposal) {
     return (
