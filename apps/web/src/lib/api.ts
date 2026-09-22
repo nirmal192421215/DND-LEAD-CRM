@@ -7,35 +7,30 @@ const isDemoMode = import.meta.env.VITE_USE_MOCK === 'true' ||
   (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app') && !import.meta.env.VITE_API_URL);
 
 function getInitialStage(serialNo: number): "NEW" | "CONTACTED" | "CALL_BACK" | "MEETING" | "PROPOSAL" | "NEGOTIATION" | "WON" | "LOST" {
-  if ([2, 14, 28, 42].includes(serialNo)) return "WON";
+  if ([2, 14, 28, 42, 59].includes(serialNo)) return "WON";
+  if ([6, 21, 38, 54, 66].includes(serialNo)) return "LOST";
   if ([7, 18, 33, 49, 63].includes(serialNo)) return "NEGOTIATION";
   if ([1, 11, 20, 25, 36, 48, 58, 67].includes(serialNo)) return "PROPOSAL";
   if ([4, 15, 22, 31, 41, 52, 62].includes(serialNo)) return "MEETING";
   if ([5, 10, 19, 29, 39, 47, 56, 65].includes(serialNo)) return "CALL_BACK";
   if ([3, 8, 12, 17, 24, 30, 35, 43, 50, 57, 64, 69].includes(serialNo)) return "CONTACTED";
-  if ([6, 21, 38].includes(serialNo)) return "LOST";
   return "NEW";
 }
 
 // Helper to initialize mock DB in localStorage with all 69 DND leads
 function initMockDb() {
-  if (!localStorage.getItem('dnd_leads_v8')) {
-    const SOURCES = [
-      'Google Maps',
-      'Instagram Showcase',
-      'Architect Referral',
-      'Website Portfolio',
-      'Field Survey',
-    ];
+  const versionKey = 'dnd_leads_v12_all_stages';
+  if (!localStorage.getItem(versionKey)) {
     const defaultLeads: Lead[] = MOCK_LEADS_RAW.map((r, i) => {
       const serialNo = i + 1;
-      const source = (r as any).source || (
-        serialNo % 5 === 0 ? 'Instagram Showcase' :
-        serialNo % 7 === 0 ? 'Architect Referral' :
-        serialNo % 9 === 0 ? 'Website Portfolio' :
-        serialNo % 13 === 0 ? 'Field Survey' :
-        'Google Maps'
+      const source = (
+        serialNo % 5 === 0 ? 'Instagram' :
+        serialNo % 7 === 0 ? 'Referral' :
+        serialNo % 9 === 0 ? 'Website' :
+        serialNo % 13 === 0 ? 'Direct' :
+        'Google'
       );
+      const stage = getInitialStage(serialNo);
       return {
         id: `DND-${String(serialNo).padStart(3, '0')}`,
         serialNo,
@@ -46,10 +41,10 @@ function initMockDb() {
         budgetLakhs: r.budgetLakhs || 45,
         source: source,
         priority: (r.priority as any) || 'HOT',
-        stage: (r as any).stage || getInitialStage(serialNo),
+        stage: stage,
         phone: r.phone || '9360931010',
         email: `contact@${r.name.toLowerCase().replace(/[^a-z0-9]/g, '')}.com`,
-        winProbability: 75,
+        winProbability: stage === 'WON' ? 100 : stage === 'LOST' ? 0 : stage === 'NEGOTIATION' ? 85 : stage === 'PROPOSAL' ? 75 : 50,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         activities: [],
@@ -57,7 +52,7 @@ function initMockDb() {
     });
     localStorage.setItem('bb_leads', JSON.stringify(defaultLeads));
     localStorage.setItem('dnd_cached_leads_v5', JSON.stringify(defaultLeads));
-    localStorage.setItem('dnd_leads_v8', 'true');
+    localStorage.setItem(versionKey, 'true');
   }
 }
 

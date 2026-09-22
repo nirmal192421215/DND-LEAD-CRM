@@ -91,7 +91,7 @@ export default function LeadsPage() {
   useEffect(() => { fetchLeads(); }, [fetchLeads]);
 
   const PRIORITY_FILTERS = ['HOT', 'WARM', 'COLD'];
-  const STAGE_FILTERS = ['NEW', 'CONTACTED', 'CALL_BACK', 'MEETING', 'PROPOSAL', 'NEGOTIATION'];
+  const STAGE_FILTERS = ['NEW', 'CONTACTED', 'CALL_BACK', 'MEETING', 'PROPOSAL', 'NEGOTIATION', 'WON', 'LOST'];
 
   const getCategoryOfLead = (lead: Lead): 'INTERIOR' | 'RESTAURANT' | 'CONSTRUCTION' | 'INFRA' => {
     const text = `${lead.projectType || ''} ${lead.projectDescription || ''} ${lead.name || ''} ${lead.tags || ''}`.toLowerCase();
