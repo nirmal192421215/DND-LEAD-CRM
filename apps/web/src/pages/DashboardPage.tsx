@@ -171,30 +171,32 @@ export default function DashboardPage() {
   const sourceData = analytics?.bySource ?? [];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
 
       {/* ── Greeting ────────────────────────────────────────────────────── */}
       <div style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        padding: '18px 22px',
+        padding: '14px 18px',
         background: 'linear-gradient(135deg, var(--brand-dim), rgba(16,217,160,0.06))',
-        borderRadius: 'var(--radius-xl)',
+        borderRadius: 'var(--radius-lg)',
         border: '1px solid rgba(108,99,255,0.2)',
+        flexWrap: 'wrap',
+        gap: 10,
       }}>
         <div>
           <div style={{
-            fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20,
+            fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18,
             background: 'linear-gradient(135deg, var(--text-primary), var(--brand-light))',
             WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-            marginBottom: 4,
+            marginBottom: 2,
           }}>
             {getGreeting()}, {user?.name?.split(' ')[0]} 👋
           </div>
-          <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
             {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button className="btn btn-primary btn-sm" onClick={() => navigate('/leads')}>
             + New Lead
           </button>
@@ -211,7 +213,7 @@ export default function DashboardPage() {
             background: 'var(--bg-card)',
             border: '1px solid var(--border)',
             borderRadius: 'var(--radius-lg)',
-            padding: '18px 20px',
+            padding: '14px 16px',
             display: 'flex', flexDirection: 'column', gap: 6,
             position: 'relative', overflow: 'hidden',
             transition: 'border-color 150ms, transform 150ms',
@@ -234,10 +236,10 @@ export default function DashboardPage() {
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div style={{
-                width: 36, height: 36, borderRadius: 10,
+                width: 32, height: 32, borderRadius: 8,
                 background: kpi.dimVar,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 16, border: `1px solid ${kpi.colorVar}30`,
+                fontSize: 14, border: `1px solid ${kpi.colorVar}30`,
               }}>
                 {kpi.icon}
               </div>
@@ -247,13 +249,13 @@ export default function DashboardPage() {
             <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               {kpi.label}
             </div>
-            <div style={{ fontSize: 26, fontWeight: 800, fontFamily: 'var(--font-display)', color: 'var(--text-primary)', lineHeight: 1 }}>
+            <div style={{ fontSize: 22, fontWeight: 800, fontFamily: 'var(--font-display)', color: 'var(--text-primary)', lineHeight: 1 }}>
               {kpi.value}
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{kpi.sub}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{kpi.sub}</div>
               <div style={{
-                fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 8,
+                fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 6,
                 color: kpi.trendUp ? 'var(--emerald)' : 'var(--rose)',
                 background: kpi.trendUp ? 'var(--emerald-dim)' : 'var(--rose-dim)',
               }}>
@@ -265,10 +267,10 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Balanced 2-Column Main Content Layout ────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 16, alignItems: 'start' }}>
+      <div className="dashboard-grid">
 
         {/* Left Column — Analytics & Funnel Breakdown */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
 
           {/* 1. Pipeline Funnel */}
           <div className="card">
@@ -307,7 +309,7 @@ export default function DashboardPage() {
           </div>
 
           {/* 2. Win / Loss + Lead Sources Row */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div className="dashboard-analytics-grid">
 
             {/* Win / Loss */}
             <div className="card">

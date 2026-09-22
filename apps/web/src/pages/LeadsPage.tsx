@@ -223,15 +223,17 @@ export default function LeadsPage() {
       <div style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 8,
-        marginBottom: 12,
+        gap: 6,
+        marginBottom: 10,
         padding: '6px 8px',
         background: 'var(--bg-elevated)',
         borderRadius: 12,
         border: '1px solid var(--border)',
         overflowX: 'auto',
+        WebkitOverflowScrolling: 'touch',
+        scrollbarWidth: 'none',
       }}>
-        <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 700, paddingLeft: 6, whiteSpace: 'nowrap' }}>
+        <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, paddingLeft: 4, whiteSpace: 'nowrap', textTransform: 'uppercase' }}>
           Industry:
         </span>
         {CATEGORY_TABS.map((cat) => {
@@ -244,10 +246,10 @@ export default function LeadsPage() {
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: 6,
-                padding: '6px 14px',
+                gap: 5,
+                padding: '4px 10px',
                 borderRadius: 8,
-                fontSize: 13,
+                fontSize: 12,
                 fontWeight: isActive ? 700 : 500,
                 border: isActive ? '1px solid var(--brand)' : '1px solid transparent',
                 background: isActive ? 'var(--brand-dim)' : 'transparent',
@@ -255,26 +257,15 @@ export default function LeadsPage() {
                 cursor: 'pointer',
                 transition: 'all 150ms ease',
                 whiteSpace: 'nowrap',
-              }}
-              onMouseEnter={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
-                  e.currentTarget.style.color = 'var(--text-primary)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.color = 'var(--text-secondary)';
-                }
+                flexShrink: 0,
               }}
             >
               <span>{cat.icon}</span>
               <span>{cat.label}</span>
               <span style={{
-                fontSize: 11,
-                padding: '1px 6px',
-                borderRadius: 10,
+                fontSize: 10,
+                padding: '1px 5px',
+                borderRadius: 8,
                 background: isActive ? 'var(--brand)' : 'var(--bg-surface)',
                 color: isActive ? '#fff' : 'var(--text-muted)',
                 fontWeight: 700,
@@ -286,69 +277,114 @@ export default function LeadsPage() {
         })}
       </div>
 
-      {/* ── Filters ── */}
-      <div className="filter-bar">
-        <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }}>Filter:</span>
-
-        <button
-          className={`filter-chip ${filterOwner === 'ME' ? 'active' : ''}`}
-          onClick={() => setFilterOwner(filterOwner === 'ME' ? 'ALL' : 'ME')}
+      {/* ── Compact Responsive Filter Bar ── */}
+      <div
+        className="filter-bar"
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          gap: 8,
+          padding: '8px 12px',
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border)',
+          borderRadius: 12,
+          marginBottom: 14,
+        }}
+      >
+        {/* Horizontal Priority & Ownership Chips */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+            overflowX: 'auto',
+            whiteSpace: 'nowrap',
+            WebkitOverflowScrolling: 'touch',
+            scrollbarWidth: 'none',
+            flex: '1 1 auto',
+            minWidth: 0,
+          }}
         >
-          👤 My Leads
-        </button>
-
-        <div style={{ width: 1, height: 20, background: 'var(--border)' }} />
-
-        {PRIORITY_FILTERS.map((p) => (
           <button
-            key={p}
-            className={`filter-chip ${filterPriority === p ? 'active' : ''}`}
-            onClick={() => setFilterPriority(filterPriority === p ? '' : p)}
+            className={`filter-chip ${filterOwner === 'ME' ? 'active' : ''}`}
+            onClick={() => setFilterOwner(filterOwner === 'ME' ? 'ALL' : 'ME')}
+            style={{ fontSize: 11, padding: '3px 8px', minHeight: 28, flexShrink: 0 }}
           >
-            {p === 'HOT' ? '🔥' : p === 'WARM' ? '🌤' : '❄️'} {p}
+            👤 My Leads
           </button>
-        ))}
 
-        <div style={{ width: 1, height: 20, background: 'var(--border)' }} />
+          {PRIORITY_FILTERS.map((p) => (
+            <button
+              key={p}
+              className={`filter-chip ${filterPriority === p ? 'active' : ''}`}
+              onClick={() => setFilterPriority(filterPriority === p ? '' : p)}
+              style={{ fontSize: 11, padding: '3px 8px', minHeight: 28, flexShrink: 0 }}
+            >
+              {p === 'HOT' ? '🔥' : p === 'WARM' ? '🌤' : '❄️'} {p}
+            </button>
+          ))}
+        </div>
 
-        {STAGE_FILTERS.map((s) => (
-          <button
-            key={s}
-            className={`filter-chip ${filterStage === s ? 'active' : ''}`}
-            onClick={() => setFilterStage(filterStage === s ? '' : s)}
+        {/* Compact Dropdown Selects for Stage & Source (Clean on both mobile & desktop) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+          {/* Stage Dropdown */}
+          <select
+            className="form-input"
+            value={filterStage}
+            onChange={(e) => setFilterStage(e.target.value)}
+            style={{
+              padding: '4px 8px',
+              fontSize: 12,
+              borderRadius: 8,
+              background: filterStage ? 'var(--brand-dim)' : 'var(--bg-elevated)',
+              border: filterStage ? '1px solid var(--brand)' : '1px solid var(--border)',
+              color: filterStage ? 'var(--brand-light)' : 'var(--text-secondary)',
+              cursor: 'pointer',
+              minHeight: 30,
+              width: 'auto',
+            }}
           >
-            {stageLabel(s)}
-          </button>
-        ))}
+            <option value="">All Stages</option>
+            {STAGE_FILTERS.map((s) => (
+              <option key={s} value={s}>{stageLabel(s)}</option>
+            ))}
+          </select>
 
-        <div style={{ width: 1, height: 20, background: 'var(--border)' }} />
-
-        {/* Source Filter Chips */}
-        {['Google', 'Instagram', 'Referral', 'Website', 'Direct'].map((s) => (
-          <button
-            key={s}
-            className={`filter-chip ${filterSource === s ? 'active' : ''}`}
-            onClick={() => setFilterSource(filterSource === s ? 'ALL' : s)}
+          {/* Source Dropdown */}
+          <select
+            className="form-input"
+            value={filterSource}
+            onChange={(e) => setFilterSource(e.target.value)}
+            style={{
+              padding: '4px 8px',
+              fontSize: 12,
+              borderRadius: 8,
+              background: filterSource !== 'ALL' ? 'var(--brand-dim)' : 'var(--bg-elevated)',
+              border: filterSource !== 'ALL' ? '1px solid var(--brand)' : '1px solid var(--border)',
+              color: filterSource !== 'ALL' ? 'var(--brand-light)' : 'var(--text-secondary)',
+              cursor: 'pointer',
+              minHeight: 30,
+              width: 'auto',
+            }}
           >
-            {SOURCE_ICONS[s]} {s}
-          </button>
-        ))}
+            <option value="ALL">All Sources</option>
+            {['Google', 'Instagram', 'Referral', 'Website', 'Direct'].map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
 
-        {(filterStage || filterPriority || filterOwner === 'ME' || filterCategory !== 'ALL' || filterSource !== 'ALL') && (
-          <button
-            className="btn btn-ghost btn-sm"
-            onClick={() => { setFilterStage(''); setFilterPriority(''); setFilterOwner('ALL'); setFilterCategory('ALL'); setFilterSource('ALL'); }}
-          >
-            ✕ Clear
-          </button>
-        )}
-
-        {/* Drag hint */}
-        {view === 'kanban' && (
-          <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic' }}>
-            ⠿ Drag cards between columns to update stage
-          </span>
-        )}
+          {/* Clear Filters */}
+          {(filterStage || filterPriority || filterOwner === 'ME' || filterCategory !== 'ALL' || filterSource !== 'ALL') && (
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => { setFilterStage(''); setFilterPriority(''); setFilterOwner('ALL'); setFilterCategory('ALL'); setFilterSource('ALL'); }}
+              style={{ fontSize: 11, padding: '3px 8px', minHeight: 30, color: 'var(--rose)' }}
+            >
+              ✕ Reset
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ── Kanban View ── */}
