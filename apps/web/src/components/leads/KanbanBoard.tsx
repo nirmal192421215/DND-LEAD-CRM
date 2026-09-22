@@ -463,7 +463,7 @@ export default function KanbanBoard({ leads, onLeadMoved }: Props) {
 
                       {/* WhatsApp Icon */}
                       <a
-                        href={lead.phone ? `https://wa.me/${cleanWhatsAppPhone(lead.phone)}?text=${encodeURIComponent(`Hi ${lead.name}, reaching out from DND Studio regarding web & mobile app solutions.`)}` : '#'}
+                        href={lead.phone ? `https://api.whatsapp.com/send?phone=${cleanWhatsAppPhone(lead.phone)}&text=${encodeURIComponent(`Hi ${lead.name}, reaching out from DND Studio regarding your ${lead.projectType || 'Architecture & Turnkey Interior'} project. Would you be open for a quick 5-min intro call today?`)}` : '#'}
                         target="_blank"
                         rel="noopener noreferrer"
                         title={lead.phone ? `WhatsApp ${lead.name}` : 'No phone number'}

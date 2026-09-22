@@ -1603,7 +1603,7 @@ export default function LeadDetailPage() {
                 <div style={{ padding: '10px 14px', background: 'rgba(37,211,102,0.08)', borderRadius: 8, border: '1px solid rgba(37,211,102,0.25)' }}>
                   <div style={{ fontSize: 12, fontWeight: 600, color: '#25D366', marginBottom: 4 }}>💬 WhatsApp Invitation to Client:</div>
                   <a
-                    href={`https://wa.me/${cleanWhatsAppPhone(lead.phone)}?text=${encodeURIComponent(`Hi ${lead.name}, confirming our Google Meet demo on ${meetTime ? new Date(meetTime).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'our scheduled time'}.\nGoogle Meet Link: ${meetUrl || 'https://meet.google.com/new'}\n\nLooking forward to speaking with you! — Nirmal, DND Studio`)}`}
+                    href={`https://api.whatsapp.com/send?phone=${cleanWhatsAppPhone(lead.phone)}&text=${encodeURIComponent(`Hi *${lead.name}*,\n\nConfirming our architectural 3D walkthrough & concept presentation on ${meetTime ? new Date(meetTime).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : 'our scheduled time'}.\n\n🎥 *Google Meet Link:* ${meetUrl || 'https://meet.google.com/new'}\n\nLooking forward to speaking with you!\n\nBest regards,\nNirmal | DND Studio`)}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="btn btn-secondary btn-sm"

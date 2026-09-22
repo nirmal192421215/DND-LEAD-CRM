@@ -507,7 +507,7 @@ export default function DashboardPage() {
                           )}
                           {lead.phone && (
                             <a
-                              href={`https://wa.me/${cleanWhatsAppPhone(lead.phone)}?text=${encodeURIComponent(`Hi ${lead.name}, following up from DND Studio.`)}`}
+                              href={`https://api.whatsapp.com/send?phone=${cleanWhatsAppPhone(lead.phone)}&text=${encodeURIComponent(`Hi ${lead.name}, this is Nirmal from DND Studio following up on your ${lead.projectType || 'Architecture & Interior'} project. Would you be open for a quick 5-min intro call today?`)}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="btn btn-secondary btn-sm"
