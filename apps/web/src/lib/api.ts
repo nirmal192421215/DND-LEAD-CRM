@@ -19,9 +19,23 @@ function getInitialStage(serialNo: number): "NEW" | "CONTACTED" | "CALL_BACK" | 
 
 // Helper to initialize mock DB in localStorage with all 69 DND leads
 function initMockDb() {
-  if (!localStorage.getItem('dnd_leads_v7')) {
+  if (!localStorage.getItem('dnd_leads_v8')) {
+    const SOURCES = [
+      'Google Maps',
+      'Instagram Showcase',
+      'Architect Referral',
+      'Website Portfolio',
+      'Field Survey',
+    ];
     const defaultLeads: Lead[] = MOCK_LEADS_RAW.map((r, i) => {
       const serialNo = i + 1;
+      const source = (r as any).source || (
+        serialNo % 5 === 0 ? 'Instagram Showcase' :
+        serialNo % 7 === 0 ? 'Architect Referral' :
+        serialNo % 9 === 0 ? 'Website Portfolio' :
+        serialNo % 13 === 0 ? 'Field Survey' :
+        'Google Maps'
+      );
       return {
         id: `DND-${String(serialNo).padStart(3, '0')}`,
         serialNo,
@@ -30,7 +44,7 @@ function initMockDb() {
         projectDescription: `Google Maps: ${r.category || 'Architecture & Construction'}, Rating: ${r.rating || 5}`,
         location: `${r.city || 'Chennai'}, ${r.state || 'Tamil Nadu'}`,
         budgetLakhs: r.budgetLakhs || 45,
-        source: 'Google',
+        source: source,
         priority: (r.priority as any) || 'HOT',
         stage: (r as any).stage || getInitialStage(serialNo),
         phone: r.phone || '9360931010',
@@ -43,7 +57,7 @@ function initMockDb() {
     });
     localStorage.setItem('bb_leads', JSON.stringify(defaultLeads));
     localStorage.setItem('dnd_cached_leads_v5', JSON.stringify(defaultLeads));
-    localStorage.setItem('dnd_leads_v7', 'true');
+    localStorage.setItem('dnd_leads_v8', 'true');
   }
 }
 
@@ -285,37 +299,88 @@ if (isDemoMode) {
         const pipeline = leads.filter((l) => !['WON', 'LOST'].includes(l.stage)).reduce((a, l) => a + l.budgetLakhs, 0);
         const weighted = leads.filter((l) => !['WON', 'LOST'].includes(l.stage)).reduce((a, l) => a + l.budgetLakhs * (l.winProbability / 100), 0);
 
-        const leader = {
-          id: 'admin-id',
-          name: 'Nirmal kumar N',
-          initials: 'N',
-          role: 'PRINCIPAL',
-          totalLeads: total,
-          activeLeads: active,
-          wonLeads: won,
-          pipelineLakhs: pipeline,
-          weightedLakhs: weighted,
-          conversionRate: total > 0 ? Math.round((won / total) * 100) : 0
-        };
+        const team = [
+          {
+            id: 'admin-id',
+            name: 'Nirmal kumar N',
+            initials: 'NK',
+            role: 'PRINCIPAL',
+            totalLeads: Math.round(total * 0.42),
+            activeLeads: Math.round(active * 0.42),
+            wonLeads: Math.max(2, Math.round(won * 0.5)),
+            pipelineLakhs: Math.round(pipeline * 0.45),
+            weightedLakhs: Math.round(weighted * 0.48),
+            conversionRate: 24,
+            avgDealSize: '₹55.0L',
+            speed: '12m'
+          },
+          {
+            id: 'team-2',
+            name: 'Priya Sundaram',
+            initials: 'PS',
+            role: 'SALES_LEAD',
+            totalLeads: Math.round(total * 0.28),
+            activeLeads: Math.round(active * 0.28),
+            wonLeads: Math.max(1, Math.round(won * 0.25)),
+            pipelineLakhs: Math.round(pipeline * 0.28),
+            weightedLakhs: Math.round(weighted * 0.27),
+            conversionRate: 19,
+            avgDealSize: '₹42.0L',
+            speed: '18m'
+          },
+          {
+            id: 'team-3',
+            name: 'Karthik Raja',
+            initials: 'KR',
+            role: 'ARCHITECT',
+            totalLeads: Math.round(total * 0.18),
+            activeLeads: Math.round(active * 0.18),
+            wonLeads: Math.max(1, Math.round(won * 0.15)),
+            pipelineLakhs: Math.round(pipeline * 0.16),
+            weightedLakhs: Math.round(weighted * 0.15),
+            conversionRate: 16,
+            avgDealSize: '₹38.0L',
+            speed: '25m'
+          },
+          {
+            id: 'team-4',
+            name: 'Ananya Sharma',
+            initials: 'AS',
+            role: 'INTERIOR_LEAD',
+            totalLeads: Math.round(total * 0.12),
+            activeLeads: Math.round(active * 0.12),
+            wonLeads: Math.max(1, Math.round(won * 0.1)),
+            pipelineLakhs: Math.round(pipeline * 0.11),
+            weightedLakhs: Math.round(weighted * 0.10),
+            conversionRate: 14,
+            avgDealSize: '₹28.5L',
+            speed: '30m'
+          }
+        ];
 
         return {
           status: 200,
           statusText: 'OK',
           headers: {},
           config: cfg,
-          data: { success: true, data: [leader] }
+          data: { success: true, data: team }
         };
       }
 
       // 8. GET /analytics/monthly-trends
       if (url.includes('/analytics/monthly-trends') && method === 'get') {
+        const wonCount = leads.filter(l => l.stage === 'WON').length;
+        const wonValue = leads.filter(l => l.stage === 'WON').reduce((a, b) => a + b.budgetLakhs, 0);
+
         const months = [
-          { month: 'Mar 26', newLeads: 12, wonLeads: 2, wonValueLakhs: 70 },
-          { month: 'Apr 26', newLeads: 18, wonLeads: 3, wonValueLakhs: 110 },
-          { month: 'May 26', newLeads: 22, wonLeads: 5, wonValueLakhs: 210 },
-          { month: 'Jun 26', newLeads: 29, wonLeads: 6, wonValueLakhs: 260 },
-          { month: 'Jul 26', newLeads: 16, wonLeads: 4, wonValueLakhs: 180 },
-          { month: 'Aug 26', newLeads: leads.length, wonLeads: leads.filter(l => l.stage === 'WON').length, wonValueLakhs: leads.filter(l => l.stage === 'WON').reduce((a,b) => a + b.budgetLakhs, 0) }
+          { month: 'Apr 26', newLeads: 14, wonLeads: 2, wonValueLakhs: 85, activePipelineLakhs: 480, isProjected: false },
+          { month: 'May 26', newLeads: 21, wonLeads: 3, wonValueLakhs: 145, activePipelineLakhs: 720, isProjected: false },
+          { month: 'Jun 26', newLeads: 28, wonLeads: 5, wonValueLakhs: 230, activePipelineLakhs: 1100, isProjected: false },
+          { month: 'Jul 26', newLeads: 35, wonLeads: 6, wonValueLakhs: 290, activePipelineLakhs: 1540, isProjected: false },
+          { month: 'Aug 26', newLeads: 48, wonLeads: 7, wonValueLakhs: 340, activePipelineLakhs: 1980, isProjected: false },
+          { month: 'Sep 26', newLeads: leads.length, wonLeads: Math.max(wonCount, 4), wonValueLakhs: Math.max(wonValue, 200), activePipelineLakhs: 2430, isProjected: false },
+          { month: 'Oct 26 (AI)', newLeads: 84, wonLeads: 11, wonValueLakhs: 490, activePipelineLakhs: 2950, isProjected: true },
+          { month: 'Nov 26 (AI)', newLeads: 98, wonLeads: 15, wonValueLakhs: 640, activePipelineLakhs: 3480, isProjected: true },
         ];
         return {
           status: 200,
