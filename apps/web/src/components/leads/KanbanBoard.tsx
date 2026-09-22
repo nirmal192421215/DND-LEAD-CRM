@@ -157,6 +157,28 @@ export default function KanbanBoard({ leads, onLeadMoved }: Props) {
     const lead = leads.find((l) => l.id === leadId);
     if (!lead || lead.stage === targetStage) return;
 
+    // Optimistically sync localStorage caches so stage movement is permanent
+    try {
+      ['dnd_cached_leads_v5', 'bb_leads'].forEach((key) => {
+        const data = localStorage.getItem(key);
+        if (data) {
+          const list = JSON.parse(data);
+          const idx = list.findIndex((l: any) =>
+            l.id === leadId ||
+            String(l.serialNo) === leadId ||
+            (leadId.toLowerCase().startsWith('dnd-') && String(l.serialNo) === String(parseInt(leadId.replace(/\D/g, ''), 10)))
+          );
+          if (idx !== -1) {
+            list[idx].stage = targetStage;
+            list[idx].updatedAt = new Date().toISOString();
+            localStorage.setItem(key, JSON.stringify(list));
+          }
+        }
+      });
+    } catch (err) {
+      console.warn('Kanban cache sync error:', err);
+    }
+
     setMovingId(leadId);
     try {
       await api.patch(`/leads/${leadId}`, { stage: targetStage });

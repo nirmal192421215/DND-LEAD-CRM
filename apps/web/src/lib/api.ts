@@ -6,28 +6,44 @@ import type { Lead } from './mockData';
 const isDemoMode = import.meta.env.VITE_USE_MOCK === 'true' ||
   (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app') && !import.meta.env.VITE_API_URL);
 
-// Helper to initialize mock DB in localStorage with all 50 DND leads
+function getInitialStage(serialNo: number): "NEW" | "CONTACTED" | "CALL_BACK" | "MEETING" | "PROPOSAL" | "NEGOTIATION" | "WON" | "LOST" {
+  if ([2, 14, 28, 42].includes(serialNo)) return "WON";
+  if ([7, 18, 33, 49, 63].includes(serialNo)) return "NEGOTIATION";
+  if ([1, 11, 20, 25, 36, 48, 58, 67].includes(serialNo)) return "PROPOSAL";
+  if ([4, 15, 22, 31, 41, 52, 62].includes(serialNo)) return "MEETING";
+  if ([5, 10, 19, 29, 39, 47, 56, 65].includes(serialNo)) return "CALL_BACK";
+  if ([3, 8, 12, 17, 24, 30, 35, 43, 50, 57, 64, 69].includes(serialNo)) return "CONTACTED";
+  if ([6, 21, 38].includes(serialNo)) return "LOST";
+  return "NEW";
+}
+
+// Helper to initialize mock DB in localStorage with all 69 DND leads
 function initMockDb() {
-  if (!localStorage.getItem('dnd_leads_v3')) {
-    const defaultLeads: Lead[] = MOCK_LEADS_RAW.map((r, i) => ({
-      id: `DND-${String(i + 1).padStart(3, '0')}`,
-      name: r.name,
-      projectType: r.projectType || 'Custom Website & Mobile App',
-      projectDescription: `Google Maps: ${r.category}, Rating: ${r.rating}`,
-      location: `${r.city}, ${r.state}`,
-      budgetLakhs: r.budgetLakhs || 1.5,
-      source: 'Google',
-      priority: (r.priority as any) || 'HOT',
-      stage: 'NEW',
-      phone: r.phone || '+91 93426 26096',
-      email: `contact@${r.name.toLowerCase().replace(/[^a-z0-9]/g, '')}.com`,
-      winProbability: 15,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      activities: [],
-    }));
+  if (!localStorage.getItem('dnd_leads_v7')) {
+    const defaultLeads: Lead[] = MOCK_LEADS_RAW.map((r, i) => {
+      const serialNo = i + 1;
+      return {
+        id: `DND-${String(serialNo).padStart(3, '0')}`,
+        serialNo,
+        name: r.name,
+        projectType: r.projectType || 'Architecture & Turnkey Interior',
+        projectDescription: `Google Maps: ${r.category || 'Architecture & Construction'}, Rating: ${r.rating || 5}`,
+        location: `${r.city || 'Chennai'}, ${r.state || 'Tamil Nadu'}`,
+        budgetLakhs: r.budgetLakhs || 45,
+        source: 'Google',
+        priority: (r.priority as any) || 'HOT',
+        stage: (r as any).stage || getInitialStage(serialNo),
+        phone: r.phone || '9360931010',
+        email: `contact@${r.name.toLowerCase().replace(/[^a-z0-9]/g, '')}.com`,
+        winProbability: 75,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        activities: [],
+      };
+    });
     localStorage.setItem('bb_leads', JSON.stringify(defaultLeads));
-    localStorage.setItem('dnd_leads_v3', 'true');
+    localStorage.setItem('dnd_cached_leads_v5', JSON.stringify(defaultLeads));
+    localStorage.setItem('dnd_leads_v7', 'true');
   }
 }
 
@@ -486,6 +502,7 @@ if (isDemoMode) {
 
           leads[idx] = updated;
           localStorage.setItem('bb_leads', JSON.stringify(leads));
+          localStorage.setItem('dnd_cached_leads_v5', JSON.stringify(leads));
 
           return {
             status: 200,

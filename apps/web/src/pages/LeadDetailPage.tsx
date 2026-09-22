@@ -241,8 +241,32 @@ export default function LeadDetailPage() {
     };
   }, [id, lead?.stage, fetchLead, toast]);
 
+  const syncStageCache = (targetStage: string) => {
+    try {
+      ['dnd_cached_leads_v5', 'bb_leads'].forEach((key) => {
+        const data = localStorage.getItem(key);
+        if (data) {
+          const list = JSON.parse(data);
+          const idx = list.findIndex((l: any) =>
+            l.id === id ||
+            String(l.serialNo) === id ||
+            (id && id.toLowerCase().startsWith('dnd-') && String(l.serialNo) === String(parseInt(id.replace(/\D/g, ''), 10)))
+          );
+          if (idx !== -1) {
+            list[idx].stage = targetStage;
+            list[idx].updatedAt = new Date().toISOString();
+            localStorage.setItem(key, JSON.stringify(list));
+          }
+        }
+      });
+    } catch (err) {
+      console.warn('Cache sync error:', err);
+    }
+  };
+
   const updateStage = async (stage: string) => {
     if (stage === lead?.stage) return;
+    syncStageCache(stage);
     await api.patch(`/leads/${id}`, { stage });
     fetchLead();
     toast(`Stage updated to ${stageLabel(stage)} ✓`, 'success');
@@ -254,6 +278,7 @@ export default function LeadDetailPage() {
       return;
     }
     try {
+      syncStageCache('CALL_BACK');
       await api.patch(`/leads/${id}`, {
         stage: 'CALL_BACK',
         callBackAt: new Date(callBackTime).toISOString(),
@@ -278,6 +303,7 @@ export default function LeadDetailPage() {
       return;
     }
     try {
+      syncStageCache('MEETING');
       await api.patch(`/leads/${id}`, {
         stage: 'MEETING',
         meetingUrl: meetUrl || null,
@@ -305,6 +331,7 @@ export default function LeadDetailPage() {
 
   const submitReject = async () => {
     try {
+      syncStageCache('LOST');
       await api.patch(`/leads/${id}`, {
         stage: 'LOST',
         lostReason: rejectReason,

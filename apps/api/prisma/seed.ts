@@ -1008,6 +1008,8 @@ async function main() {
     const owner = owners[i % owners.length];
     const leadCode = "DND-" + String(item.serialNo).padStart(3, '0');
 
+    const assignedStage = (item as any).stage || getInitialStage(item.serialNo);
+
     await prisma.lead.create({
       data: {
         id: leadCode,
@@ -1024,13 +1026,24 @@ async function main() {
         ownerId: owner.id,
         winProbability: item.winProbability,
         tags: item.tags,
-        stage: 'NEW',
+        stage: assignedStage as any,
         stageChangedAt: new Date(),
       },
     });
   }
 
-  console.log('✅ Seeded all ' + ALL_LEADS_DATA.length + ' leads successfully!');
+  console.log('✅ Seeded all ' + ALL_LEADS_DATA.length + ' leads successfully with realistic pipeline stages!');
+}
+
+function getInitialStage(serialNo: number): "NEW" | "CONTACTED" | "CALL_BACK" | "MEETING" | "PROPOSAL" | "NEGOTIATION" | "WON" | "LOST" {
+  if ([2, 14, 28, 42].includes(serialNo)) return "WON";
+  if ([7, 18, 33, 49, 63].includes(serialNo)) return "NEGOTIATION";
+  if ([1, 11, 20, 25, 36, 48, 58, 67].includes(serialNo)) return "PROPOSAL";
+  if ([4, 15, 22, 31, 41, 52, 62].includes(serialNo)) return "MEETING";
+  if ([5, 10, 19, 29, 39, 47, 56, 65].includes(serialNo)) return "CALL_BACK";
+  if ([3, 8, 12, 17, 24, 30, 35, 43, 50, 57, 64, 69].includes(serialNo)) return "CONTACTED";
+  if ([6, 21, 38].includes(serialNo)) return "LOST";
+  return "NEW";
 }
 
 main().catch(console.error).finally(() => prisma.$disconnect());
