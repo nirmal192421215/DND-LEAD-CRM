@@ -78,19 +78,19 @@ interface HighValueDeal {
 
 /* ─── Color Palettes & Constants ──────────────────────────────── */
 const STAGE_CONFIG: Record<string, { label: string; color: string; bg: string; avgDays: string }> = {
-  NEW: { label: 'New Inbound', color: '#6c63ff', bg: 'rgba(108,99,255,0.12)', avgDays: '1.2d' },
-  CONTACTED: { label: 'Contacted', color: '#38bdf8', bg: 'rgba(56,189,248,0.12)', avgDays: '2.5d' },
-  CALL_BACK: { label: 'Follow Up / Call', color: '#818cf8', bg: 'rgba(129,140,248,0.12)', avgDays: '3.1d' },
-  MEETING: { label: 'Site / Zoom Meeting', color: '#f5a623', bg: 'rgba(245,166,35,0.12)', avgDays: '4.8d' },
-  PROPOSAL: { label: 'Design Proposal', color: '#a78bfa', bg: 'rgba(167,139,250,0.12)', avgDays: '5.4d' },
-  NEGOTIATION: { label: 'Commercial Negotiation', color: '#fb923c', bg: 'rgba(251,146,60,0.12)', avgDays: '3.9d' },
+  NEW: { label: 'New Inbound', color: '#6c63ff', bg: 'rgba(108,99,255,0.14)', avgDays: '1.2d' },
+  CONTACTED: { label: 'Contacted', color: '#38bdf8', bg: 'rgba(56,189,248,0.14)', avgDays: '2.5d' },
+  CALL_BACK: { label: 'Follow Up / Call', color: '#818cf8', bg: 'rgba(129,140,248,0.14)', avgDays: '3.1d' },
+  MEETING: { label: 'Site / Zoom Meeting', color: '#f5a623', bg: 'rgba(245,166,35,0.14)', avgDays: '4.8d' },
+  PROPOSAL: { label: 'Design Proposal', color: '#a78bfa', bg: 'rgba(167,139,250,0.14)', avgDays: '5.4d' },
+  NEGOTIATION: { label: 'Commercial Negotiation', color: '#fb923c', bg: 'rgba(251,146,60,0.14)', avgDays: '3.9d' },
   WON: { label: 'Closed Won Deal', color: '#10d9a0', bg: 'rgba(16,217,160,0.15)', avgDays: '14.2d total' },
-  LOST: { label: 'Archived / Lost', color: '#ff5f7e', bg: 'rgba(255,95,126,0.12)', avgDays: '-' },
+  LOST: { label: 'Archived / Lost', color: '#ff5f7e', bg: 'rgba(255,95,126,0.14)', avgDays: '-' },
 };
 
 const SOURCE_COLORS = ['#6c63ff', '#38bdf8', '#10d9a0', '#f5a623', '#a78bfa', '#ec4899'];
 
-/* ─── Cyber HUD Tooltip ───────────────────────────────────────── */
+/* ─── Cyber HUD Tooltip (Adapts cleanly to light/dark mode) ──── */
 const FuturisticTooltip = ({
   active,
   payload,
@@ -105,20 +105,19 @@ const FuturisticTooltip = ({
   return (
     <div
       style={{
-        background: 'rgba(15, 18, 26, 0.95)',
-        backdropFilter: 'blur(16px)',
-        border: '1px solid rgba(108, 99, 255, 0.35)',
+        background: 'var(--bg-elevated)',
+        border: '1px solid var(--border-strong)',
         borderRadius: 12,
         padding: '12px 16px',
-        boxShadow: '0 12px 36px rgba(0,0,0,0.7), 0 0 20px rgba(108,99,255,0.2)',
+        boxShadow: 'var(--shadow-lg)',
         minWidth: 170,
         fontFamily: 'var(--font-display)',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 8, borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: 6 }}>
-        <span style={{ fontWeight: 800, fontSize: 13, color: '#f0f2f8' }}>{label}</span>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 8, borderBottom: '1px solid var(--border)', paddingBottom: 6 }}>
+        <span style={{ fontWeight: 800, fontSize: 13, color: 'var(--text-primary)' }}>{label}</span>
         {label?.includes('(AI)') && (
-          <span style={{ fontSize: 9, fontWeight: 700, background: 'rgba(16,217,160,0.2)', color: '#10d9a0', padding: '2px 6px', borderRadius: 4, textTransform: 'uppercase' }}>
+          <span style={{ fontSize: 9, fontWeight: 700, background: 'var(--emerald-dim)', color: 'var(--emerald)', padding: '2px 6px', borderRadius: 4, textTransform: 'uppercase' }}>
             AI Forecast
           </span>
         )}
@@ -127,10 +126,10 @@ const FuturisticTooltip = ({
         {payload.map((p, i) => (
           <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: p.color || '#6c63ff', boxShadow: `0 0 6px ${p.color || '#6c63ff'}` }} />
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: p.color || 'var(--brand)', boxShadow: `0 0 6px ${p.color || 'var(--brand)'}` }} />
               <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{p.name}</span>
             </div>
-            <span style={{ fontSize: 13, fontWeight: 800, color: '#ffffff' }}>
+            <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)' }}>
               {typeof p.value === 'number' && p.name.includes('₹') ? `₹${p.value}L` : p.value}
             </span>
           </div>
@@ -282,10 +281,10 @@ export default function AnalyticsPage() {
 
       {/* ─── Futuristic Command Bar & Telemetry Strip ─── */}
       <div
+        className="card"
         style={{
-          background: 'linear-gradient(135deg, rgba(20, 24, 36, 0.85) 0%, rgba(12, 14, 22, 0.95) 100%)',
-          backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(108, 99, 255, 0.25)',
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border)',
           borderRadius: 'var(--radius-lg)',
           padding: '16px 22px',
           display: 'flex',
@@ -293,7 +292,7 @@ export default function AnalyticsPage() {
           alignItems: 'center',
           flexWrap: 'wrap',
           gap: 16,
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255,255,255,0.06)',
+          boxShadow: 'var(--shadow-md)',
           position: 'relative',
           overflow: 'hidden',
         }}
@@ -305,8 +304,8 @@ export default function AnalyticsPage() {
             top: 0,
             left: 0,
             right: 0,
-            height: 2,
-            background: 'linear-gradient(90deg, transparent, #6c63ff, #38bdf8, #10d9a0, transparent)',
+            height: 3,
+            background: 'linear-gradient(90deg, transparent, var(--brand), var(--sky), var(--emerald), transparent)',
           }}
         />
 
@@ -316,20 +315,20 @@ export default function AnalyticsPage() {
               width: 42,
               height: 42,
               borderRadius: 12,
-              background: 'linear-gradient(135deg, rgba(108,99,255,0.25), rgba(56,189,248,0.25))',
-              border: '1px solid rgba(108,99,255,0.4)',
+              background: 'var(--brand-dim)',
+              border: '1px solid var(--border-strong)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               fontSize: 20,
-              boxShadow: '0 0 16px rgba(108,99,255,0.3)',
+              boxShadow: 'var(--shadow-sm)',
             }}
           >
             ⚡
           </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18, color: '#ffffff', letterSpacing: '-0.02em' }}>
+              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
                 Executive Intelligence Hub
               </span>
               <span
@@ -339,15 +338,15 @@ export default function AnalyticsPage() {
                   letterSpacing: '0.08em',
                   padding: '3px 8px',
                   borderRadius: 20,
-                  background: 'rgba(16, 217, 160, 0.15)',
-                  color: '#10d9a0',
+                  background: 'var(--emerald-dim)',
+                  color: 'var(--emerald)',
                   border: '1px solid rgba(16, 217, 160, 0.3)',
                   display: 'flex',
                   alignItems: 'center',
                   gap: 5,
                 }}
               >
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10d9a0', boxShadow: '0 0 6px #10d9a0' }} />
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--emerald)', boxShadow: '0 0 6px var(--emerald)' }} />
                 AI TELEMETRY LIVE
               </span>
             </div>
@@ -363,10 +362,10 @@ export default function AnalyticsPage() {
           <div
             style={{
               display: 'flex',
-              background: 'rgba(0,0,0,0.4)',
+              background: 'var(--bg-elevated)',
               padding: 3,
               borderRadius: 10,
-              border: '1px solid rgba(255,255,255,0.08)',
+              border: '1px solid var(--border)',
             }}
           >
             {(['30D', '90D', '6M', '1Y', 'ALL'] as const).map((h) => (
@@ -383,7 +382,7 @@ export default function AnalyticsPage() {
                   fontWeight: 700,
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
-                  boxShadow: timeHorizon === h ? '0 0 12px rgba(108,99,255,0.5)' : 'none',
+                  boxShadow: timeHorizon === h ? '0 0 12px rgba(108,99,255,0.4)' : 'none',
                 }}
               >
                 {h}
@@ -398,9 +397,9 @@ export default function AnalyticsPage() {
               display: 'flex',
               alignItems: 'center',
               gap: 6,
-              background: showPrediction ? 'rgba(16, 217, 160, 0.12)' : 'rgba(255,255,255,0.04)',
-              border: `1px solid ${showPrediction ? 'rgba(16, 217, 160, 0.4)' : 'rgba(255,255,255,0.1)'}`,
-              color: showPrediction ? '#10d9a0' : 'var(--text-secondary)',
+              background: showPrediction ? 'var(--emerald-dim)' : 'var(--bg-elevated)',
+              border: `1px solid ${showPrediction ? 'rgba(16, 217, 160, 0.4)' : 'var(--border)'}`,
+              color: showPrediction ? 'var(--emerald)' : 'var(--text-secondary)',
               padding: '6px 14px',
               borderRadius: 9,
               fontSize: 12,
@@ -442,9 +441,9 @@ export default function AnalyticsPage() {
       {exportNotice && (
         <div
           style={{
-            background: 'rgba(16,217,160,0.12)',
+            background: 'var(--emerald-dim)',
             border: '1px solid rgba(16,217,160,0.35)',
-            color: '#10d9a0',
+            color: 'var(--emerald)',
             borderRadius: 10,
             padding: '10px 18px',
             fontSize: 13,
@@ -464,26 +463,26 @@ export default function AnalyticsPage() {
         <div
           className="card"
           style={{
-            background: 'linear-gradient(145deg, rgba(27, 30, 42, 0.9) 0%, rgba(17, 20, 29, 0.95) 100%)',
-            border: '1px solid rgba(108, 99, 255, 0.28)',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
             position: 'relative',
             overflow: 'hidden',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.4), inset 0 0 20px rgba(108,99,255,0.05)',
+            boxShadow: 'var(--shadow-md)',
           }}
         >
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'linear-gradient(90deg, #6c63ff, #8b84ff)' }} />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-            <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-secondary)' }}>
+            <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)' }}>
               Gross Pipeline Value
             </span>
-            <span style={{ fontSize: 11, fontWeight: 700, color: '#10d9a0', background: 'rgba(16,217,160,0.15)', padding: '2px 8px', borderRadius: 12 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--emerald)', background: 'var(--emerald-dim)', padding: '2px 8px', borderRadius: 12 }}>
               +34.2% MoM
             </span>
           </div>
-          <div style={{ fontSize: 32, fontWeight: 800, fontFamily: 'var(--font-display)', color: '#ffffff', lineHeight: 1.1 }}>
+          <div style={{ fontSize: 32, fontWeight: 800, fontFamily: 'var(--font-display)', color: 'var(--text-primary)', lineHeight: 1.1 }}>
             ₹{overview.pipelineValueLakhs}L
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--border)' }}>
             <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
               Weighted AI: <strong style={{ color: 'var(--brand-light)' }}>₹{overview.weightedForecastLakhs}L</strong>
             </span>
@@ -497,28 +496,28 @@ export default function AnalyticsPage() {
         <div
           className="card"
           style={{
-            background: 'linear-gradient(145deg, rgba(27, 30, 42, 0.9) 0%, rgba(17, 20, 29, 0.95) 100%)',
-            border: '1px solid rgba(56, 189, 248, 0.28)',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
             position: 'relative',
             overflow: 'hidden',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.4), inset 0 0 20px rgba(56,189,248,0.05)',
+            boxShadow: 'var(--shadow-md)',
           }}
         >
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'linear-gradient(90deg, #38bdf8, #0284c7)' }} />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-            <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-secondary)' }}>
+            <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)' }}>
               Total Opportunities
             </span>
-            <span style={{ fontSize: 11, fontWeight: 700, color: '#38bdf8', background: 'rgba(56,189,248,0.15)', padding: '2px 8px', borderRadius: 12 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--sky)', background: 'var(--sky-dim)', padding: '2px 8px', borderRadius: 12 }}>
               69 In Database
             </span>
           </div>
-          <div style={{ fontSize: 32, fontWeight: 800, fontFamily: 'var(--font-display)', color: '#ffffff', lineHeight: 1.1 }}>
+          <div style={{ fontSize: 32, fontWeight: 800, fontFamily: 'var(--font-display)', color: 'var(--text-primary)', lineHeight: 1.1 }}>
             {overview.totalLeads}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--border)' }}>
             <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-              Avg Ticket: <strong style={{ color: '#38bdf8' }}>₹35.2 Lakhs</strong>
+              Avg Ticket: <strong style={{ color: 'var(--sky)' }}>₹35.2 Lakhs</strong>
             </span>
             <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600 }}>
               14.2 / mo pace
@@ -530,30 +529,30 @@ export default function AnalyticsPage() {
         <div
           className="card"
           style={{
-            background: 'linear-gradient(145deg, rgba(27, 30, 42, 0.9) 0%, rgba(17, 20, 29, 0.95) 100%)',
-            border: '1px solid rgba(16, 217, 160, 0.28)',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
             position: 'relative',
             overflow: 'hidden',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.4), inset 0 0 20px rgba(16,217,160,0.05)',
+            boxShadow: 'var(--shadow-md)',
           }}
         >
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'linear-gradient(90deg, #10d9a0, #059669)' }} />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-            <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-secondary)' }}>
+            <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)' }}>
               Closed Won Revenue
             </span>
-            <span style={{ fontSize: 11, fontWeight: 700, color: '#10d9a0', background: 'rgba(16,217,160,0.15)', padding: '2px 8px', borderRadius: 12 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--emerald)', background: 'var(--emerald-dim)', padding: '2px 8px', borderRadius: 12 }}>
               🏆 {overview.wonLeads} Projects Won
             </span>
           </div>
-          <div style={{ fontSize: 32, fontWeight: 800, fontFamily: 'var(--font-display)', color: '#10d9a0', lineHeight: 1.1 }}>
+          <div style={{ fontSize: 32, fontWeight: 800, fontFamily: 'var(--font-display)', color: 'var(--emerald)', lineHeight: 1.1 }}>
             {overview.conversionRate > 0 ? `${overview.conversionRate}%` : '18.5%'}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--border)' }}>
             <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
               Turnkey Win Rate
             </span>
-            <span style={{ fontSize: 12, color: '#10d9a0', fontWeight: 700 }}>
+            <span style={{ fontSize: 12, color: 'var(--emerald)', fontWeight: 700 }}>
               +4.8% vs Market
             </span>
           </div>
@@ -563,30 +562,30 @@ export default function AnalyticsPage() {
         <div
           className="card"
           style={{
-            background: 'linear-gradient(145deg, rgba(27, 30, 42, 0.9) 0%, rgba(17, 20, 29, 0.95) 100%)',
-            border: '1px solid rgba(245, 166, 35, 0.28)',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
             position: 'relative',
             overflow: 'hidden',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.4), inset 0 0 20px rgba(245,166,35,0.05)',
+            boxShadow: 'var(--shadow-md)',
           }}
         >
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'linear-gradient(90deg, #f5a623, #d97706)' }} />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-            <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-secondary)' }}>
+            <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)' }}>
               Velocity & AI Health
             </span>
-            <span style={{ fontSize: 11, fontWeight: 700, color: '#f5a623', background: 'rgba(245,166,35,0.15)', padding: '2px 8px', borderRadius: 12 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--amber)', background: 'var(--amber-dim)', padding: '2px 8px', borderRadius: 12 }}>
               94 / 100 Index
             </span>
           </div>
-          <div style={{ fontSize: 32, fontWeight: 800, fontFamily: 'var(--font-display)', color: '#ffffff', lineHeight: 1.1 }}>
+          <div style={{ fontSize: 32, fontWeight: 800, fontFamily: 'var(--font-display)', color: 'var(--text-primary)', lineHeight: 1.1 }}>
             11.8 Days
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--border)' }}>
             <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
               Avg Inbound-to-Proposal
             </span>
-            <span style={{ fontSize: 12, color: '#f5a623', fontWeight: 600 }}>
+            <span style={{ fontSize: 12, color: 'var(--amber)', fontWeight: 600 }}>
               0 Stalled Deals
             </span>
           </div>
@@ -597,21 +596,21 @@ export default function AnalyticsPage() {
       <div
         className="card"
         style={{
-          background: 'linear-gradient(145deg, rgba(20, 24, 34, 0.95) 0%, rgba(14, 16, 24, 0.98) 100%)',
-          border: '1px solid rgba(108, 99, 255, 0.25)',
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border)',
           borderRadius: 'var(--radius-lg)',
           padding: '24px',
-          boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
+          boxShadow: 'var(--shadow-md)',
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 22, flexWrap: 'wrap', gap: 14 }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18, color: '#ffffff' }}>
+              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18, color: 'var(--text-primary)' }}>
                 Acquisition Velocity & Revenue Trajectory
               </span>
               {showPrediction && (
-                <span style={{ fontSize: 11, fontWeight: 700, color: '#10d9a0', background: 'rgba(16,217,160,0.12)', border: '1px solid rgba(16,217,160,0.3)', padding: '2px 8px', borderRadius: 12 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--emerald)', background: 'var(--emerald-dim)', border: '1px solid rgba(16,217,160,0.3)', padding: '2px 8px', borderRadius: 12 }}>
                   Neural Regression Model Enabled
                 </span>
               )}
@@ -623,7 +622,7 @@ export default function AnalyticsPage() {
 
           {/* Mode Switchers */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ display: 'flex', background: 'rgba(0,0,0,0.4)', padding: 3, borderRadius: 8, border: '1px solid rgba(255,255,255,0.08)' }}>
+            <div style={{ display: 'flex', background: 'var(--bg-elevated)', padding: 3, borderRadius: 8, border: '1px solid var(--border)' }}>
               <button
                 onClick={() => setChartMode('SYNERGY')}
                 style={{
@@ -643,7 +642,7 @@ export default function AnalyticsPage() {
                 onClick={() => setChartMode('REVENUE')}
                 style={{
                   background: chartMode === 'REVENUE' ? 'var(--emerald)' : 'transparent',
-                  color: chartMode === 'REVENUE' ? '#0a0b0f' : 'var(--text-secondary)',
+                  color: chartMode === 'REVENUE' ? '#ffffff' : 'var(--text-secondary)',
                   border: 'none',
                   padding: '5px 12px',
                   borderRadius: 6,
@@ -658,7 +657,7 @@ export default function AnalyticsPage() {
                 onClick={() => setChartMode('VOLUME')}
                 style={{
                   background: chartMode === 'VOLUME' ? 'var(--sky)' : 'transparent',
-                  color: chartMode === 'VOLUME' ? '#0a0b0f' : 'var(--text-secondary)',
+                  color: chartMode === 'VOLUME' ? '#ffffff' : 'var(--text-secondary)',
                   border: 'none',
                   padding: '5px 12px',
                   borderRadius: 6,
@@ -688,8 +687,8 @@ export default function AnalyticsPage() {
             <span>Active Pipeline Volume (₹L)</span>
           </div>
           {showPrediction && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#10d9a0', fontWeight: 600 }}>
-              <div style={{ width: 16, height: 2, background: '#10d9a0', borderTop: '2px dashed #10d9a0' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--emerald)', fontWeight: 600 }}>
+              <div style={{ width: 16, height: 2, background: 'var(--emerald)', borderTop: '2px dashed var(--emerald)' }} />
               <span>Predictive AI Horizon</span>
             </div>
           )}
@@ -713,15 +712,15 @@ export default function AnalyticsPage() {
                   <stop offset="95%" stopColor="#059669" stopOpacity={0.4} />
                 </linearGradient>
               </defs>
-              <CartesianGrid stroke="rgba(255,255,255,0.05)" strokeDasharray="3 3" vertical={false} />
+              <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
               <XAxis
                 dataKey="month"
-                tick={{ fill: '#8b92a8', fontSize: 11, fontWeight: 600 }}
-                axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+                tick={{ fill: 'var(--text-muted)', fontSize: 11, fontWeight: 600 }}
+                axisLine={{ stroke: 'var(--border)' }}
                 tickLine={false}
               />
               <YAxis
-                tick={{ fill: '#8b92a8', fontSize: 11, fontWeight: 600 }}
+                tick={{ fill: 'var(--text-muted)', fontSize: 11, fontWeight: 600 }}
                 axisLine={false}
                 tickLine={false}
                 width={40}
@@ -777,15 +776,15 @@ export default function AnalyticsPage() {
         <div
           className="card"
           style={{
-            background: 'linear-gradient(145deg, rgba(20, 24, 34, 0.95) 0%, rgba(14, 16, 24, 0.98) 100%)',
-            border: '1px solid rgba(255,255,255,0.08)',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
             borderRadius: 'var(--radius-lg)',
             padding: '22px',
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
             <div>
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: '#ffffff' }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: 'var(--text-primary)' }}>
                 Stage Conversion Velocity Matrix
               </div>
               <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
@@ -798,7 +797,7 @@ export default function AnalyticsPage() {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {funnelOrdered.map(({ stage, count, valueLakhs }, idx) => {
+            {funnelOrdered.map(({ stage, count, valueLakhs }) => {
               const config = STAGE_CONFIG[stage] || { label: stage, color: '#6c63ff', bg: 'rgba(108,99,255,0.12)', avgDays: '2d' };
               const percentOfTotal = Math.round((count / totalLeadsCount) * 100);
               const isSelected = selectedFunnelStage === stage;
@@ -808,8 +807,8 @@ export default function AnalyticsPage() {
                   key={stage}
                   onClick={() => setSelectedFunnelStage(isSelected ? null : stage)}
                   style={{
-                    background: isSelected ? 'rgba(108,99,255,0.12)' : 'rgba(255,255,255,0.02)',
-                    border: `1px solid ${isSelected ? config.color : 'rgba(255,255,255,0.05)'}`,
+                    background: isSelected ? 'var(--brand-dim)' : 'var(--bg-elevated)',
+                    border: `1px solid ${isSelected ? config.color : 'var(--border)'}`,
                     borderRadius: 10,
                     padding: '10px 14px',
                     cursor: 'pointer',
@@ -827,10 +826,10 @@ export default function AnalyticsPage() {
                           boxShadow: `0 0 8px ${config.color}`,
                         }}
                       />
-                      <span style={{ fontSize: 13, fontWeight: 700, color: '#f0f2f8' }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>
                         {config.label}
                       </span>
-                      <span style={{ fontSize: 11, color: 'var(--text-muted)', background: 'rgba(255,255,255,0.05)', padding: '1px 6px', borderRadius: 6 }}>
+                      <span style={{ fontSize: 11, color: 'var(--text-muted)', background: 'var(--bg-hover)', padding: '1px 6px', borderRadius: 6 }}>
                         ⏱ {config.avgDays}
                       </span>
                     </div>
@@ -841,14 +840,14 @@ export default function AnalyticsPage() {
                           ₹{valueLakhs}L
                         </span>
                       )}
-                      <span style={{ fontSize: 13, fontWeight: 800, color: '#ffffff', minWidth: 24, textAlign: 'right' }}>
+                      <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)', minWidth: 24, textAlign: 'right' }}>
                         {count} <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500 }}>({percentOfTotal}%)</span>
                       </span>
                     </div>
                   </div>
 
                   {/* High-Tech Glowing Progress Track */}
-                  <div style={{ height: 6, background: 'rgba(0,0,0,0.5)', borderRadius: 6, overflow: 'hidden', position: 'relative' }}>
+                  <div style={{ height: 6, background: 'var(--bg-hover)', borderRadius: 6, overflow: 'hidden', position: 'relative' }}>
                     <div
                       style={{
                         height: '100%',
@@ -870,8 +869,8 @@ export default function AnalyticsPage() {
         <div
           className="card"
           style={{
-            background: 'linear-gradient(145deg, rgba(20, 24, 34, 0.95) 0%, rgba(14, 16, 24, 0.98) 100%)',
-            border: '1px solid rgba(255,255,255,0.08)',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
             borderRadius: 'var(--radius-lg)',
             padding: '22px',
             display: 'flex',
@@ -880,14 +879,14 @@ export default function AnalyticsPage() {
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
             <div>
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: '#ffffff' }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: 'var(--text-primary)' }}>
                 Multi-Channel Attribution & ROI
               </div>
               <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
                 Origin channels mapped to client acquisition efficiency
               </div>
             </div>
-            <span style={{ fontSize: 11, fontWeight: 700, color: '#10d9a0', background: 'rgba(16,217,160,0.12)', padding: '3px 8px', borderRadius: 8 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--emerald)', background: 'var(--emerald-dim)', padding: '3px 8px', borderRadius: 8 }}>
               Top: Google Maps (48%)
             </span>
           </div>
@@ -911,7 +910,7 @@ export default function AnalyticsPage() {
                       <Cell
                         key={i}
                         fill={SOURCE_COLORS[i % SOURCE_COLORS.length]}
-                        stroke="rgba(0,0,0,0.5)"
+                        stroke="var(--bg-card)"
                         strokeWidth={2}
                       />
                     ))}
@@ -929,7 +928,7 @@ export default function AnalyticsPage() {
                   pointerEvents: 'none',
                 }}
               >
-                <span style={{ fontSize: 18, fontWeight: 800, fontFamily: 'var(--font-display)', color: '#ffffff', lineHeight: 1 }}>
+                <span style={{ fontSize: 18, fontWeight: 800, fontFamily: 'var(--font-display)', color: 'var(--text-primary)', lineHeight: 1 }}>
                   {totalLeadsCount}
                 </span>
                 <span style={{ fontSize: 9, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -950,8 +949,8 @@ export default function AnalyticsPage() {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      background: 'rgba(255,255,255,0.02)',
-                      border: '1px solid rgba(255,255,255,0.05)',
+                      background: 'var(--bg-elevated)',
+                      border: '1px solid var(--border)',
                       borderRadius: 8,
                       padding: '7px 12px',
                     }}
@@ -962,7 +961,7 @@ export default function AnalyticsPage() {
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{pct}%</span>
-                      <span style={{ fontSize: 13, fontWeight: 800, color: '#ffffff' }}>{s.count}</span>
+                      <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)' }}>{s.count}</span>
                     </div>
                   </div>
                 );
@@ -976,8 +975,8 @@ export default function AnalyticsPage() {
               marginTop: 16,
               padding: '12px 14px',
               borderRadius: 10,
-              background: 'linear-gradient(135deg, rgba(108,99,255,0.08), rgba(56,189,248,0.08))',
-              border: '1px solid rgba(108,99,255,0.2)',
+              background: 'var(--brand-dim)',
+              border: '1px solid var(--border)',
               display: 'flex',
               alignItems: 'center',
               gap: 10,
@@ -985,7 +984,7 @@ export default function AnalyticsPage() {
           >
             <span style={{ fontSize: 16 }}>💡</span>
             <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.4 }}>
-              <strong style={{ color: '#ffffff' }}>AI Inbound Optimization:</strong> Architectural Referrals yield the highest closing rate (<strong>84%</strong>). Recommended: automate post-completion referral triggers.
+              <strong style={{ color: 'var(--text-primary)' }}>AI Inbound Optimization:</strong> Architectural Referrals yield the highest closing rate (<strong>84%</strong>). Recommended: automate post-completion referral triggers.
             </div>
           </div>
         </div>
@@ -999,8 +998,8 @@ export default function AnalyticsPage() {
         <div
           className="card"
           style={{
-            background: 'linear-gradient(145deg, rgba(20, 24, 34, 0.95) 0%, rgba(14, 16, 24, 0.98) 100%)',
-            border: '1px solid rgba(16, 217, 160, 0.25)',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
             borderRadius: 'var(--radius-lg)',
             padding: '22px',
           }}
@@ -1008,10 +1007,10 @@ export default function AnalyticsPage() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: '#ffffff' }}>
+                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: 'var(--text-primary)' }}>
                   Neural Revenue Forecasting (Q4 Horizon)
                 </span>
-                <span style={{ fontSize: 10, fontWeight: 700, background: 'rgba(16,217,160,0.15)', color: '#10d9a0', padding: '2px 7px', borderRadius: 10 }}>
+                <span style={{ fontSize: 10, fontWeight: 700, background: 'var(--emerald-dim)', color: 'var(--emerald)', padding: '2px 7px', borderRadius: 10 }}>
                   94% Confidence
                 </span>
               </div>
@@ -1024,7 +1023,7 @@ export default function AnalyticsPage() {
           {/* Forecast Range Box */}
           <div
             style={{
-              background: 'linear-gradient(135deg, rgba(16,217,160,0.1) 0%, rgba(56,189,248,0.06) 100%)',
+              background: 'var(--emerald-dim)',
               border: '1px solid rgba(16,217,160,0.3)',
               borderRadius: 12,
               padding: '16px 20px',
@@ -1035,16 +1034,16 @@ export default function AnalyticsPage() {
             }}
           >
             <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#10d9a0', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--emerald)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
                 Estimated Q4 Closed ARR
               </div>
-              <div style={{ fontSize: 26, fontWeight: 800, fontFamily: 'var(--font-display)', color: '#ffffff', marginTop: 2 }}>
+              <div style={{ fontSize: 26, fontWeight: 800, fontFamily: 'var(--font-display)', color: 'var(--text-primary)', marginTop: 2 }}>
                 ₹185.0L — ₹230.0L
               </div>
             </div>
             <div style={{ textAlign: 'right' }}>
               <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>Expected Won Deals</div>
-              <div style={{ fontSize: 20, fontWeight: 800, color: '#10d9a0' }}>+8 to +12 Projects</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--emerald)' }}>+8 to +12 Projects</div>
             </div>
           </div>
 
@@ -1063,7 +1062,7 @@ export default function AnalyticsPage() {
                   gap: 10,
                   fontSize: 12,
                   color: 'var(--text-secondary)',
-                  background: 'rgba(255,255,255,0.02)',
+                  background: 'var(--bg-elevated)',
                   padding: '8px 12px',
                   borderRadius: 8,
                 }}
@@ -1079,8 +1078,8 @@ export default function AnalyticsPage() {
         <div
           className="card"
           style={{
-            background: 'linear-gradient(145deg, rgba(20, 24, 34, 0.95) 0%, rgba(14, 16, 24, 0.98) 100%)',
-            border: '1px solid rgba(245, 166, 35, 0.25)',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
             borderRadius: 'var(--radius-lg)',
             padding: '22px',
             display: 'flex',
@@ -1089,14 +1088,14 @@ export default function AnalyticsPage() {
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
             <div>
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: '#ffffff' }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: 'var(--text-primary)' }}>
                 High-Probability Closing Radar
               </div>
               <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
                 Top deals ready for immediate WhatsApp outreach & closing
               </div>
             </div>
-            <span style={{ fontSize: 11, fontWeight: 700, color: '#f5a623', background: 'rgba(245,166,35,0.12)', padding: '3px 8px', borderRadius: 8 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--amber)', background: 'var(--amber-dim)', padding: '3px 8px', borderRadius: 8 }}>
               ⚡ Actionable Now
             </span>
           </div>
@@ -1106,8 +1105,8 @@ export default function AnalyticsPage() {
               <div
                 key={deal.id}
                 style={{
-                  background: 'rgba(255,255,255,0.02)',
-                  border: '1px solid rgba(255,255,255,0.06)',
+                  background: 'var(--bg-elevated)',
+                  border: '1px solid var(--border)',
                   borderRadius: 10,
                   padding: '10px 14px',
                   display: 'flex',
@@ -1118,7 +1117,7 @@ export default function AnalyticsPage() {
               >
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: '#ffffff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {deal.name}
                     </span>
                     <span
@@ -1127,7 +1126,7 @@ export default function AnalyticsPage() {
                         fontWeight: 700,
                         padding: '2px 6px',
                         borderRadius: 6,
-                        background: STAGE_CONFIG[deal.stage]?.bg || 'rgba(108,99,255,0.15)',
+                        background: STAGE_CONFIG[deal.stage]?.bg || 'var(--brand-dim)',
                         color: STAGE_CONFIG[deal.stage]?.color || 'var(--brand-light)',
                       }}
                     >
@@ -1141,7 +1140,7 @@ export default function AnalyticsPage() {
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 12, fontWeight: 800, color: '#10d9a0' }}>{deal.winProbability}%</div>
+                    <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--emerald)' }}>{deal.winProbability}%</div>
                     <div style={{ fontSize: 9, color: 'var(--text-muted)' }}>Win Score</div>
                   </div>
 
@@ -1178,16 +1177,17 @@ export default function AnalyticsPage() {
       <div
         className="card"
         style={{
-          background: 'linear-gradient(145deg, rgba(20, 24, 34, 0.95) 0%, rgba(14, 16, 24, 0.98) 100%)',
-          border: '1px solid rgba(255,255,255,0.08)',
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border)',
           borderRadius: 'var(--radius-lg)',
           padding: 0,
           overflow: 'hidden',
+          boxShadow: 'var(--shadow-md)',
         }}
       >
-        <div style={{ padding: '18px 22px 14px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ padding: '18px 22px 14px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: '#ffffff' }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: 'var(--text-primary)' }}>
               Executive Studio Performance & Leadership
             </div>
             <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
@@ -1202,7 +1202,7 @@ export default function AnalyticsPage() {
         <div style={{ overflowX: 'auto' }}>
           <table className="data-table" style={{ width: '100%', minWidth: 640 }}>
             <thead>
-              <tr style={{ background: 'rgba(0,0,0,0.2)' }}>
+              <tr style={{ background: 'var(--bg-elevated)' }}>
                 <th style={{ width: 44, paddingLeft: 20 }}>#</th>
                 <th>Team Member</th>
                 <th>Role</th>
@@ -1229,7 +1229,7 @@ export default function AnalyticsPage() {
                         fontSize: 12,
                         fontWeight: 800,
                         background: i === 0 ? 'rgba(245,166,35,0.2)' : i === 1 ? 'rgba(192,192,192,0.15)' : 'rgba(176,140,88,0.12)',
-                        color: i === 0 ? '#f5a623' : i === 1 ? '#e2e8f0' : '#b08c58',
+                        color: i === 0 ? '#f5a623' : i === 1 ? 'var(--text-secondary)' : '#b08c58',
                         border: i === 0 ? '1px solid rgba(245,166,35,0.4)' : 'none',
                       }}
                     >
@@ -1243,21 +1243,21 @@ export default function AnalyticsPage() {
                           width: 36,
                           height: 36,
                           borderRadius: 10,
-                          background: 'linear-gradient(135deg, rgba(108,99,255,0.3), rgba(56,189,248,0.3))',
-                          border: '1px solid rgba(108,99,255,0.4)',
+                          background: 'var(--brand-dim)',
+                          border: '1px solid var(--border-strong)',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           fontSize: 12,
                           fontWeight: 800,
-                          color: '#ffffff',
+                          color: 'var(--brand-light)',
                           fontFamily: 'var(--font-display)',
                         }}
                       >
                         {member.initials}
                       </div>
                       <div>
-                        <span style={{ fontWeight: 700, color: '#f0f2f8' }}>{member.name}</span>
+                        <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{member.name}</span>
                         {member.avgDealSize && (
                           <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Avg Ticket: {member.avgDealSize}</div>
                         )}
@@ -1271,9 +1271,9 @@ export default function AnalyticsPage() {
                         padding: '3px 9px',
                         borderRadius: 10,
                         fontWeight: 700,
-                        background: member.role === 'PRINCIPAL' ? 'rgba(108,99,255,0.18)' : 'rgba(255,255,255,0.04)',
+                        background: member.role === 'PRINCIPAL' ? 'var(--brand-dim)' : 'var(--bg-elevated)',
                         color: member.role === 'PRINCIPAL' ? 'var(--brand-light)' : 'var(--text-secondary)',
-                        border: `1px solid ${member.role === 'PRINCIPAL' ? 'rgba(108,99,255,0.3)' : 'rgba(255,255,255,0.08)'}`,
+                        border: `1px solid ${member.role === 'PRINCIPAL' ? 'var(--brand-glow)' : 'var(--border)'}`,
                       }}
                     >
                       {member.role === 'PRINCIPAL' ? '👑 Principal Architect' :
@@ -1288,7 +1288,7 @@ export default function AnalyticsPage() {
                   <td style={{ textAlign: 'right', fontWeight: 800, color: 'var(--emerald)' }}>₹{member.weightedLakhs}L</td>
                   <td style={{ textAlign: 'right', paddingRight: 20 }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
-                      <div style={{ width: 50, height: 6, background: 'rgba(0,0,0,0.4)', borderRadius: 3, overflow: 'hidden' }}>
+                      <div style={{ width: 50, height: 6, background: 'var(--bg-hover)', borderRadius: 3, overflow: 'hidden' }}>
                         <div
                           style={{
                             height: '100%',
@@ -1298,7 +1298,7 @@ export default function AnalyticsPage() {
                           }}
                         />
                       </div>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: '#10d9a0', minWidth: 32, textAlign: 'right' }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--emerald)', minWidth: 32, textAlign: 'right' }}>
                         {member.conversionRate}%
                       </span>
                     </div>
@@ -1321,12 +1321,13 @@ export default function AnalyticsPage() {
             key={idx}
             className="card"
             style={{
-              background: 'linear-gradient(145deg, rgba(20, 24, 34, 0.95) 0%, rgba(14, 16, 24, 0.98) 100%)',
-              border: `1px solid ${item.color}33`,
+              background: 'var(--bg-card)',
+              border: `1px solid var(--border)`,
               display: 'flex',
               alignItems: 'center',
               gap: 16,
               padding: '18px',
+              boxShadow: 'var(--shadow-sm)',
             }}
           >
             <div
