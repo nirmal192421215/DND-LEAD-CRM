@@ -59,8 +59,32 @@ export default function LeadDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [lead, setLead] = useState<FullLead | null>(null);
-  const [loading, setLoading] = useState(true);
+
+  // Helper to extract lead from cache immediately
+  const getCachedLead = useCallback((): FullLead | null => {
+    if (!id) return null;
+    try {
+      const raw = localStorage.getItem('dnd_cached_leads_v5') || localStorage.getItem('bb_leads');
+      if (raw) {
+        const list: any[] = JSON.parse(raw);
+        const decoded = decodeURIComponent(id).trim();
+        const numPart = decoded.replace(/\D/g, '');
+        return list.find((l: any) =>
+          l.id === decoded ||
+          l.id?.toLowerCase() === decoded.toLowerCase() ||
+          String(l.serialNo) === decoded ||
+          (numPart && String(l.serialNo) === String(parseInt(numPart, 10))) ||
+          (l.serialNo && `dnd-${String(l.serialNo).padStart(3, '0')}`.toLowerCase() === decoded.toLowerCase())
+        ) || null;
+      }
+    } catch {
+      // ignore
+    }
+    return null;
+  }, [id]);
+
+  const [lead, setLead] = useState<FullLead | null>(() => getCachedLead());
+  const [loading, setLoading] = useState<boolean>(() => !getCachedLead());
   const [tab, setTab] = useState<'timeline' | 'notes' | 'meetings' | 'proposal' | 'files' | 'ai'>('timeline');
   const [noteText, setNoteText] = useState('');
   const [savingNote, setSavingNote] = useState(false);
@@ -104,10 +128,12 @@ export default function LeadDetailPage() {
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
 
   const fetchLead = useCallback(async () => {
-    // Safety timeout: Never stay stuck on loading screen longer than 1.2 seconds
-    const safetyTimer = setTimeout(() => {
+    // 1. Instantly check cache first to ensure 0ms rendering
+    const cached = getCachedLead();
+    if (cached) {
+      setLead((prev) => ({ ...cached, ...(prev || {}) }));
       setLoading(false);
-    }, 1200);
+    }
 
     try {
       const { data } = await api.get(`/leads/${id}`);
@@ -119,26 +145,27 @@ export default function LeadDetailPage() {
       try {
         const listRes = await api.get('/leads?limit=100');
         const allLeads = listRes.data?.data || [];
-        const numPart = id ? id.replace(/\D/g, '') : '';
+        const decoded = decodeURIComponent(id || '').trim();
+        const numPart = decoded.replace(/\D/g, '');
         const found = allLeads.find((l: any) =>
-          l.id === id ||
-          String(l.serialNo) === id ||
-          String(l.serialNo) === numPart ||
-          (l.serialNo && `dnd-${String(l.serialNo).padStart(3, '0')}`.toLowerCase() === id?.toLowerCase())
+          l.id === decoded ||
+          l.id?.toLowerCase() === decoded.toLowerCase() ||
+          String(l.serialNo) === decoded ||
+          (numPart && String(l.serialNo) === String(parseInt(numPart, 10))) ||
+          (l.serialNo && `dnd-${String(l.serialNo).padStart(3, '0')}`.toLowerCase() === decoded.toLowerCase())
         );
         if (found) {
           setLead(found);
-        } else if (allLeads.length > 0) {
-          setLead(allLeads[0]);
+        } else if (cached) {
+          setLead(cached);
         }
       } catch (e) {
         console.error('Fallback lead fetch error:', e);
       }
     } finally {
-      clearTimeout(safetyTimer);
       setLoading(false);
     }
-  }, [id]);
+  }, [id, getCachedLead]);
 
   useEffect(() => {
     fetchLead();
