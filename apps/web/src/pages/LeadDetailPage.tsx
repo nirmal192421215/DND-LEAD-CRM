@@ -269,15 +269,23 @@ export default function LeadDetailPage() {
   }, [id, lead?.stage, fetchLead, toast]);
 
   const syncStageCache = (targetStage: string) => {
+    // 1. Immediately update React state so the UI reflects the change with 0ms delay
+    setLead((prev) => (prev ? { ...prev, stage: targetStage as any } : null));
+
+    // 2. Sync to local storage caches
     try {
       ['dnd_cached_leads_v5', 'bb_leads'].forEach((key) => {
         const data = localStorage.getItem(key);
         if (data) {
           const list = JSON.parse(data);
+          const decoded = decodeURIComponent(id || '').trim();
+          const numPart = decoded.replace(/\D/g, '');
           const idx = list.findIndex((l: any) =>
-            l.id === id ||
-            String(l.serialNo) === id ||
-            (id && id.toLowerCase().startsWith('dnd-') && String(l.serialNo) === String(parseInt(id.replace(/\D/g, ''), 10)))
+            l.id === decoded ||
+            l.id?.toLowerCase() === decoded.toLowerCase() ||
+            String(l.serialNo) === decoded ||
+            (numPart && String(l.serialNo) === String(parseInt(numPart, 10))) ||
+            (l.serialNo && `dnd-${String(l.serialNo).padStart(3, '0')}`.toLowerCase() === decoded.toLowerCase())
           );
           if (idx !== -1) {
             list[idx].stage = targetStage;
@@ -294,9 +302,13 @@ export default function LeadDetailPage() {
   const updateStage = async (stage: string) => {
     if (stage === lead?.stage) return;
     syncStageCache(stage);
-    await api.patch(`/leads/${id}`, { stage });
-    fetchLead();
     toast(`Stage updated to ${stageLabel(stage)} ✓`, 'success');
+    try {
+      await api.patch(`/leads/${id}`, { stage });
+      fetchLead();
+    } catch (err) {
+      console.warn('Stage update sync error:', err);
+    }
   };
 
   const submitCallBack = async () => {
@@ -304,8 +316,11 @@ export default function LeadDetailPage() {
       toast('Please pick a callback date and time', 'error');
       return;
     }
+    setShowCallBackModal(false); // Close modal IMMEDIATELY
+    syncStageCache('CALL_BACK');
+    toast('Call Back scheduled & Stage updated ⏰', 'success');
+
     try {
-      syncStageCache('CALL_BACK');
       await api.patch(`/leads/${id}`, {
         stage: 'CALL_BACK',
         callBackAt: new Date(callBackTime).toISOString(),
@@ -316,11 +331,9 @@ export default function LeadDetailPage() {
         type: 'CALL',
         text: `Client requested call back on ${new Date(callBackTime).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}.${callBackNote ? ' Note: ' + callBackNote : ''}`,
       });
-      setShowCallBackModal(false);
       fetchLead();
-      toast('Call Back scheduled & Stage updated ⏰', 'success');
-    } catch {
-      toast('Failed to schedule call back', 'error');
+    } catch (err) {
+      console.warn('Callback sync error:', err);
     }
   };
 
@@ -329,8 +342,11 @@ export default function LeadDetailPage() {
       toast('Please pick a meeting date and time', 'error');
       return;
     }
+    setShowMeetModal(false); // Close modal IMMEDIATELY
+    syncStageCache('MEETING');
+    toast('Google Meet demo scheduled & Stage updated 🎥', 'success');
+
     try {
-      syncStageCache('MEETING');
       await api.patch(`/leads/${id}`, {
         stage: 'MEETING',
         meetingUrl: meetUrl || null,
@@ -348,17 +364,18 @@ export default function LeadDetailPage() {
         type: 'MEETING',
         text: `Scheduled Google Meet demo on ${new Date(meetTime).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}.${meetUrl ? ' Meet Link: ' + meetUrl : ''}`,
       });
-      setShowMeetModal(false);
       fetchLead();
-      toast('Google Meet demo scheduled & Stage updated 🎥', 'success');
-    } catch {
-      toast('Failed to schedule meeting', 'error');
+    } catch (err) {
+      console.warn('Meet sync error:', err);
     }
   };
 
   const submitReject = async () => {
+    setShowRejectModal(false); // Close modal IMMEDIATELY
+    syncStageCache('LOST');
+    toast('Lead marked as Lost / Rejected ❌', 'info');
+
     try {
-      syncStageCache('LOST');
       await api.patch(`/leads/${id}`, {
         stage: 'LOST',
         lostReason: rejectReason,
@@ -369,11 +386,9 @@ export default function LeadDetailPage() {
         type: 'STAGE_CHANGE',
         text: `Lead marked as Rejected / Lost. Reason: ${rejectReason}${rejectNote ? ' (' + rejectNote + ')' : ''}`,
       });
-      setShowRejectModal(false);
       fetchLead();
-      toast('Lead marked as Lost / Rejected ❌', 'info');
-    } catch {
-      toast('Failed to update stage', 'error');
+    } catch (err) {
+      console.warn('Reject sync error:', err);
     }
   };
 
